@@ -97,7 +97,7 @@ class Route
         return $this;
     }
 
-    public function getController(): ?string
+    public function getController(): mixed
     {
         return $this->defaults['_controller'] ?? null;
     }

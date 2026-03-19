@@ -64,10 +64,10 @@ class ProfilerTest extends TestCase
     {
         $profiler = new Profiler();
 
-        usleep(10000); // 10ms
+        usleep(50000); // 50ms
 
         $duration = $profiler->getDuration();
-        $this->assertGreaterThan(5, $duration); // Au moins 5ms
+        $this->assertGreaterThan(10, $duration); // Au moins 10ms
     }
 
     public function testProfilerMemory(): void
@@ -114,7 +114,9 @@ class ProfilerTest extends TestCase
         $this->assertStringContainsString('200', $html);
         $this->assertStringContainsString('home', $html);
         $this->assertStringContainsString('PHP', $html);
-        $this->assertStringContainsString('rlsq-profiler-panel', $html);
+        $this->assertStringContainsString('rlsq-profiler', $html);
+        $this->assertStringContainsString('wdt-tab', $html);
+        $this->assertStringContainsString('wdt-panel', $html);
     }
 
     public function testProfilerListenerInjectsToolbar(): void
