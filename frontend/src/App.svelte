@@ -4,6 +4,7 @@
     import Dashboard from './routes/Dashboard.svelte';
     import SchemaEditor from './routes/schema/SchemaEditor.svelte';
     import PluginStore from './routes/plugins/PluginStore.svelte';
+    import TenantDashboard from './routes/dashboard/TenantDashboard.svelte';
 
     const routes = {
         '/': Login,
@@ -11,6 +12,8 @@
         '/dashboard': Dashboard,
         '/database': SchemaEditor,
         '/plugins': PluginStore,
+        '/t/:slug': TenantDashboard,
+        '/t/:slug/*': TenantDashboard,
     };
 </script>
 

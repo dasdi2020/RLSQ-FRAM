@@ -248,6 +248,7 @@ class Kernel
         $provisioner = new \App\Tenant\Database\TenantDatabaseProvisioner($projectDir);
         $provisioner->addBaseMigration(new \App\Tenant\Database\TenantBaseMigration());
         $provisioner->addBaseMigration(new \App\Tenant\Database\TenantMetaSchemaMigration());
+        $provisioner->addBaseMigration(new \App\Tenant\Database\TenantDashboardMigration());
         $c->set('tenant.provisioner', $provisioner);
         $c->setAlias(\App\Tenant\Database\TenantDatabaseProvisioner::class, 'tenant.provisioner');
 

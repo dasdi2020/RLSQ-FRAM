@@ -36,6 +36,8 @@ $routes->addCollection($loader->loadAll([
     \App\Controller\SchemaController::class,
     \App\Controller\DynamicDataController::class,
     \App\Controller\PluginController::class,
+    \App\Controller\TenantAuthController::class,
+    \App\Controller\DashboardController::class,
 ]));
 
 // --- Page d'accueil ---
