@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+use RLSQ\Console\Application;
+
+$app = new Application('RLSQ-FRAM', '0.1.0');
+
+// Les commandes custom seront enregistrées ici
+// $app->add(new App\Command\MaCommande());
+
+exit($app->run());

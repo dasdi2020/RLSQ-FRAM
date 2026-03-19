@@ -1,0 +1,29 @@
+{
+    "name": "rlsq/fram",
+    "description": "RLSQ-FRAM — Framework PHP inspiré de Symfony, avec frontend Svelte + Vite",
+    "type": "project",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "RLSQ\\": "src/RLSQ/",
+            "App\\": "src/App/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "dev": "php -S localhost:8000 -t public"
+    }
+}

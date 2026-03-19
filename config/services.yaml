@@ -1,0 +1,7 @@
+parameters:
+    kernel.debug: true
+
+services:
+    _defaults:
+        autowire: true
+        public: true

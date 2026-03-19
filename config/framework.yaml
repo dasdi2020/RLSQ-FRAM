@@ -1,0 +1,4 @@
+framework:
+    secret: change_me_in_env
+    debug: true
+    charset: UTF-8

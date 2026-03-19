@@ -1,0 +1,9 @@
+home:
+    path: /
+    controller: App\Controller\HomeController::index
+    methods: [GET]
+
+api_status:
+    path: /api/status
+    controller: App\Controller\ApiController::status
+    methods: [GET]

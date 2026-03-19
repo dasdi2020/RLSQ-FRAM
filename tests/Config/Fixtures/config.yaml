@@ -1,0 +1,28 @@
+# Configuration de test
+framework:
+    secret: my_secret_key
+    debug: true
+    charset: UTF-8
+
+database:
+    host: localhost
+    port: 3306
+    name: rlsq_db
+    user: root
+    password: ""
+
+# Liste simple
+allowed_hosts:
+    - localhost
+    - example.com
+    - "*.example.com"
+
+# Map imbriquée
+mailer:
+    transport: smtp
+    host: mail.example.com
+    port: 587
+    encryption: tls
+    credentials:
+        username: user@example.com
+        password: secret123

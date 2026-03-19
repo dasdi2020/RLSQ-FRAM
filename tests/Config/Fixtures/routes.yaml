@@ -1,0 +1,16 @@
+home:
+    path: /
+    controller: App\Controller\HomeController::index
+    methods: [GET]
+
+article_show:
+    path: /article/{id}
+    controller: App\Controller\ArticleController::show
+    methods: [GET]
+    requirements:
+        id: \d+
+
+article_create:
+    path: /article
+    controller: App\Controller\ArticleController::create
+    methods: [POST]

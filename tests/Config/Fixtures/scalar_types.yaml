@@ -1,0 +1,18 @@
+# Test de tous les types scalaires
+string_val: hello
+int_val: 42
+negative_int: -7
+float_val: 3.14
+bool_true: true
+bool_false: false
+bool_yes: yes
+bool_no: no
+null_tilde: ~
+null_word: null
+quoted_string: "hello world"
+single_quoted: 'hello world'
+inline_list: [a, b, c]
+inline_map: {key1: val1, key2: val2}
+empty_list: []
+empty_map: {}
+comment_value: actual_value # this is a comment
