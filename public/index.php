@@ -105,6 +105,64 @@ $routes->add('api_mail_queue', new Route('/api/mail/queue', [
     },
 ], ['POST']));
 
+// --- OpenAPI + Swagger UI ---
+$routes->add('openapi_spec', new Route('/api/openapi.json', [
+    '_controller' => function () use ($routes): JsonResponse {
+        $gen = new \RLSQ\OpenApi\OpenApiGenerator('RLSQ-FRAM API', '0.1.0', 'API du framework RLSQ-FRAM');
+        $spec = $gen->generateFromRoutes($routes);
+        return new JsonResponse($spec);
+    },
+], ['GET']));
+
+$routes->add('swagger_ui', new Route('/api/docs', [
+    '_controller' => function (): Response {
+        return new Response(
+            \RLSQ\OpenApi\SwaggerUi::render('/api/openapi.json'),
+            200,
+            ['Content-Type' => 'text/html; charset=UTF-8'],
+        );
+    },
+], ['GET']));
+
+// --- GraphQL ---
+$graphqlSchema = new \RLSQ\GraphQL\Schema();
+$graphqlSchema->addType(
+    (new \RLSQ\GraphQL\TypeDefinition('Status'))
+        ->addField('status', 'String!')
+        ->addField('framework', 'String!')
+        ->addField('php', 'String!')
+        ->addField('mail_queue', 'Int!'),
+);
+$graphqlSchema->addQuery('status', new \RLSQ\GraphQL\FieldDefinition(
+    'Status',
+    fn ($ctx, $args) => ['status' => 'ok', 'framework' => 'RLSQ-FRAM', 'php' => PHP_VERSION, 'mail_queue' => $mailQueue->count()],
+));
+$graphqlSchema->addQuery('hello', (new \RLSQ\GraphQL\FieldDefinition(
+    'String!',
+    fn ($ctx, $args) => 'Hello ' . ($args['name'] ?? 'World'),
+))->addArg('name', 'String'));
+
+$graphqlExecutor = new \RLSQ\GraphQL\Executor($graphqlSchema);
+
+$routes->add('graphql', new Route('/graphql', [
+    '_controller' => function (Request $request) use ($graphqlExecutor): JsonResponse {
+        $body = json_decode($request->getContent(), true) ?? [];
+        $query = $body['query'] ?? '';
+        $variables = $body['variables'] ?? [];
+        return new JsonResponse($graphqlExecutor->execute($query, $variables));
+    },
+], ['POST']));
+
+$routes->add('graphiql', new Route('/graphiql', [
+    '_controller' => function (): Response {
+        return new Response(
+            \RLSQ\GraphQL\GraphiQL::render('/graphql'),
+            200,
+            ['Content-Type' => 'text/html; charset=UTF-8'],
+        );
+    },
+], ['GET']));
+
 // --- Event Dispatcher ---
 $dispatcher = new TraceableEventDispatcher();
 
@@ -118,7 +176,9 @@ $profiler->addCollector($eventCollector);
 $profiler->addCollector(new MailerCollector($mailer));
 
 // --- Listeners ---
+$tokenStorage = new \RLSQ\Security\Authentication\TokenStorage();
 $dispatcher->addSubscriber(new RouterListener(new UrlMatcher($routes)));
+$dispatcher->addSubscriber(new \RLSQ\Security\SecurityListener($tokenStorage));
 $dispatcher->addSubscriber(new ExceptionListener(debug: $debug));
 $dispatcher->addSubscriber(new ProfilerListener($profiler, new WebDebugToolbar(), enabled: $debug));
 

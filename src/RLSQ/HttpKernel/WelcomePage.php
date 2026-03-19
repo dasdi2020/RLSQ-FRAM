@@ -106,6 +106,8 @@ class WelcomePage
             <div class="component-tag"><span class="icon">&#128196;</span>Dotenv</div>
             <div class="component-tag"><span class="icon">&#9993;</span>Mailer</div>
             <div class="component-tag"><span class="icon">&#128270;</span>Profiler</div>
+            <div class="component-tag"><span class="icon">&#128214;</span>OpenAPI</div>
+            <div class="component-tag"><span class="icon">&#9878;</span>GraphQL</div>
         </div>
 
         <h2 class="section-title" style="margin-top:40px;">Routes enregistr&eacute;es</h2>
@@ -154,6 +156,8 @@ class WelcomePage
             ['id' => 'doc-dotenv', 'title' => 'Dotenv', 'icon' => '&#128196;'],
             ['id' => 'doc-mailer', 'title' => 'Mailer', 'icon' => '&#9993;'],
             ['id' => 'doc-profiler', 'title' => 'Profiler', 'icon' => '&#128270;'],
+            ['id' => 'doc-openapi', 'title' => 'OpenAPI', 'icon' => '&#128214;'],
+            ['id' => 'doc-graphql', 'title' => 'GraphQL', 'icon' => '&#9878;'],
         ];
 
         $nav = '';
@@ -176,7 +180,9 @@ class WelcomePage
             . self::docForm()
             . self::docDotenv()
             . self::docMailer()
-            . self::docProfiler();
+            . self::docProfiler()
+            . self::docOpenApi()
+            . self::docGraphQL();
 
         return <<<HTML
         <div class="docs-layout">
@@ -633,7 +639,10 @@ CODE);
 
     private static function docSecurity(): string
     {
-        return self::docPanel('doc-security', 'Security', 'Authentification, autorisation, firewall et hashage des mots de passe (Argon2id).', <<<'CLASSES'
+        return self::docPanel('doc-security', 'Security', 'Authentification, autorisation, attributs de s&eacute;curit&eacute; sur les routes, firewall et hashage Argon2id.', <<<'CLASSES'
+<b>#[IsGranted('ROLE_ADMIN')]</b> — Attribut de rôle sur méthode/classe (403 si refusé)
+<b>#[RequireAuth]</b> — Attribut exigeant l'authentification (401 ou redirect)
+<b>SecurityListener</b> — Listener kernel.controller vérifiant les attributs
 <b>UserInterface / InMemoryUser</b> — getUserIdentifier(), getRoles(), getPassword()
 <b>UserProviderInterface / InMemoryUserProvider</b> — Chargement des utilisateurs
 <b>NativePasswordHasher</b> — hash(), verify() avec PASSWORD_ARGON2ID
@@ -642,7 +651,25 @@ CODE);
 <b>Firewall</b> — Listener kernel.request, règles d'accès par URL
 <b>RoleVoter / AccessDecisionManager / AuthorizationChecker</b> — Système de voters
 CLASSES, <<<'CODE'
-<span class="c">// Hasher de mots de passe (Argon2id par défaut)</span>
+<span class="c">// === Attributs de sécurité sur les routes ===</span>
+
+<span class="k">#[RequireAuth(redirectTo: <span class="s">'/login'</span>)]</span>  <span class="c">// Redirige si non connecté</span>
+<span class="k">#[Route(<span class="s">'/profile'</span>)]</span>
+<span class="k">public function</span> profile(): Response { <span class="c">/* ... */</span> }
+
+<span class="k">#[IsGranted(<span class="s">'ROLE_ADMIN'</span>)]</span>            <span class="c">// 403 si pas admin</span>
+<span class="k">#[Route(<span class="s">'/admin'</span>)]</span>
+<span class="k">public function</span> admin(): Response { <span class="c">/* ... */</span> }
+
+<span class="k">#[IsGranted(<span class="s">'ROLE_EDITOR'</span>, message: <span class="s">'Réservé aux éditeurs.'</span>)]</span>
+<span class="k">#[Route(<span class="s">'/editor'</span>)]</span>
+<span class="k">public function</span> editor(): Response { <span class="c">/* ... */</span> }
+
+<span class="c">// Sur toute une classe :</span>
+<span class="k">#[IsGranted(<span class="s">'ROLE_ADMIN'</span>)]</span>
+<span class="k">class</span> AdminController { <span class="c">/* toutes les méthodes protégées */</span> }
+
+<span class="c">// === Hasher de mots de passe (Argon2id par défaut) ===</span>
 $hasher = <span class="k">new</span> NativePasswordHasher();
 $hash = $hasher->hash(<span class="s">'mon_mot_de_passe'</span>);
 $valid = $hasher->verify($hash, <span class="s">'mon_mot_de_passe'</span>); <span class="c">// true</span>
@@ -726,6 +753,122 @@ $form->handleRequest($request);
 
 <span class="c">// Rendu HTML</span>
 $html = $form->createView()->render(); <span class="c">// Formulaire complet</span>
+CODE);
+    }
+
+    private static function docOpenApi(): string
+    {
+        return self::docPanel('doc-openapi', 'OpenAPI / Swagger', 'G&eacute;n&eacute;ration automatique de sp&eacute;cification OpenAPI 3.0 depuis les routes et attributs, avec visualisation Swagger UI.', <<<'CLASSES'
+<b>#[ApiRoute]</b> — Métadonnées OpenAPI sur une méthode : summary, description, tags, parameters, requestBody, responses
+<b>#[ApiSchema]</b> — Définit un schéma OpenAPI sur un DTO/Entity (propriétés auto-extraites)
+<b>OpenApiGenerator</b> — generateFromControllers(), generateFromRoutes(), generateSchema()
+<b>SwaggerUi</b> — Génère la page HTML Swagger UI
+<b>#[IsGranted]</b> — Détecté pour ajouter automatiquement security + 401/403 dans la spec
+CLASSES, <<<'CODE'
+<span class="c">// Attributs sur un contrôleur</span>
+<span class="k">class</span> ArticleController
+{
+    <span class="k">#[Route(<span class="s">'/articles'</span>, methods: [<span class="s">'GET'</span>])]</span>
+    <span class="k">#[ApiRoute(</span>
+        summary: <span class="s">'Liste des articles'</span>,
+        tags: [<span class="s">'Article'</span>],
+        responses: [<span class="n">200</span> => <span class="s">'Liste JSON'</span>]
+    <span class="k">)]</span>
+    <span class="k">public function</span> list(): JsonResponse { <span class="c">/* ... */</span> }
+
+    <span class="k">#[Route(<span class="s">'/articles/{id}'</span>, requirements: [<span class="s">'id'</span> => <span class="s">'\d+'</span>])]</span>
+    <span class="k">#[ApiRoute(summary: <span class="s">'Détail article'</span>, tags: [<span class="s">'Article'</span>])]</span>
+    <span class="k">public function</span> show(<span class="k">int</span> $id): JsonResponse { <span class="c">/* ... */</span> }
+
+    <span class="k">#[Route(<span class="s">'/articles'</span>, methods: [<span class="s">'POST'</span>])]</span>
+    <span class="k">#[IsGranted(<span class="s">'ROLE_EDITOR'</span>)]</span>     <span class="c">// → security + 401/403 auto dans la spec</span>
+    <span class="k">#[ApiRoute(</span>
+        summary: <span class="s">'Créer un article'</span>,
+        tags: [<span class="s">'Article'</span>],
+        requestBody: [<span class="s">'type'</span> => <span class="s">'object'</span>, <span class="s">'properties'</span> => [<span class="s">'title'</span> => [<span class="s">'type'</span> => <span class="s">'string'</span>]]],
+        responses: [<span class="n">201</span> => <span class="s">'Créé'</span>]
+    <span class="k">)]</span>
+    <span class="k">public function</span> create(): JsonResponse { <span class="c">/* ... */</span> }
+}
+
+<span class="c">// Schéma DTO auto-extrait</span>
+<span class="k">#[ApiSchema(description: <span class="s">'Un article'</span>)]</span>
+<span class="k">class</span> ArticleDTO {
+    <span class="k">public string</span> $title;   <span class="c">// → type: string, required</span>
+    <span class="k">public int</span> $views = <span class="n">0</span>;  <span class="c">// → type: integer</span>
+}
+
+<span class="c">// Générer la spec</span>
+$gen = <span class="k">new</span> OpenApiGenerator(<span class="s">'Mon API'</span>, <span class="s">'1.0'</span>);
+$spec = $gen->generateFromControllers([ArticleController::<span class="k">class</span>]);
+
+<span class="c">// Routes disponibles :</span>
+<span class="c">// GET /api/docs      → Swagger UI</span>
+<span class="c">// GET /api/openapi.json → Spec JSON</span>
+CODE);
+    }
+
+    private static function docGraphQL(): string
+    {
+        return self::docPanel('doc-graphql', 'GraphQL', 'Moteur GraphQL complet avec sch&eacute;ma, types, queries, mutations et interface GraphiQL.', <<<'CLASSES'
+<b>Schema</b> — addType(), addQuery(), addMutation(), toSDL()
+<b>TypeDefinition</b> — Définition d'un type GraphQL avec champs
+<b>FieldDefinition</b> — Champ avec type de retour, arguments et resolver
+<b>Executor</b> — execute(query, variables, context) → {data, errors}
+<b>GraphiQL</b> — Interface web GraphiQL pour explorer l'API
+CLASSES, <<<'CODE'
+<span class="c">// Définir le schéma</span>
+$schema = <span class="k">new</span> Schema();
+
+<span class="c">// Types</span>
+$schema->addType(
+    (<span class="k">new</span> TypeDefinition(<span class="s">'Article'</span>, <span class="s">'Un article du blog'</span>))
+        ->addField(<span class="s">'id'</span>, <span class="s">'Int!'</span>)
+        ->addField(<span class="s">'title'</span>, <span class="s">'String!'</span>)
+        ->addField(<span class="s">'body'</span>, <span class="s">'String'</span>)
+);
+
+<span class="c">// Query avec arguments</span>
+$field = <span class="k">new</span> FieldDefinition(<span class="s">'[Article]'</span>, <span class="k">function</span>($ctx, $args) {
+    $limit = $args[<span class="s">'limit'</span>] ?? <span class="n">10</span>;
+    <span class="k">return</span> $articleRepo->findBy([], <span class="k">null</span>, $limit);
+});
+$field->addArg(<span class="s">'limit'</span>, <span class="s">'Int'</span>);
+$schema->addQuery(<span class="s">'articles'</span>, $field);
+
+<span class="c">// Query simple</span>
+$schema->addQuery(<span class="s">'article'</span>, (<span class="k">new</span> FieldDefinition(
+    <span class="s">'Article'</span>,
+    <span class="k">fn</span>($ctx, $args) => $articleRepo->find($args[<span class="s">'id'</span>])
+))->addArg(<span class="s">'id'</span>, <span class="s">'Int!'</span>));
+
+<span class="c">// Mutation</span>
+$schema->addMutation(<span class="s">'createArticle'</span>, (<span class="k">new</span> FieldDefinition(
+    <span class="s">'Article'</span>,
+    <span class="k">function</span>($ctx, $args) <span class="k">use</span> ($em) {
+        $article = <span class="k">new</span> Article();
+        $article->title = $args[<span class="s">'title'</span>];
+        $em->persist($article);
+        $em->flush();
+        <span class="k">return</span> $article;
+    }
+))->addArg(<span class="s">'title'</span>, <span class="s">'String!'</span>));
+
+<span class="c">// Exécuter</span>
+$executor = <span class="k">new</span> Executor($schema);
+$result = $executor->execute(<span class="s">'{ articles(limit: 5) { id title } }'</span>);
+<span class="c">// → ['data' => ['articles' => [['id' => 1, 'title' => '...'], ...]]]</span>
+
+<span class="c">// Requêtes supportées :</span>
+<span class="c">//   { field }                     — Query simple</span>
+<span class="c">//   { field(arg: value) }         — Avec arguments</span>
+<span class="c">//   { field { subfield } }        — Sous-sélections</span>
+<span class="c">//   query NamedQuery { ... }      — Query nommée</span>
+<span class="c">//   mutation { createX(a: v) { id } } — Mutation</span>
+
+<span class="c">// Routes disponibles :</span>
+<span class="c">// POST /graphql   → Endpoint GraphQL</span>
+<span class="c">// GET  /graphiql  → Interface GraphiQL</span>
 CODE);
     }
 
