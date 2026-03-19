@@ -5,61 +5,77 @@ declare(strict_types=1);
 namespace RLSQ\HttpKernel\Controller;
 
 use RLSQ\HttpFoundation\Request;
+use RLSQ\HttpKernel\Controller\ValueResolver\DefaultValueResolver;
+use RLSQ\HttpKernel\Controller\ValueResolver\RequestValueResolver;
+use RLSQ\HttpKernel\Controller\ValueResolver\RouteParameterValueResolver;
+use RLSQ\HttpKernel\Controller\ValueResolver\ValueResolverInterface;
 
+/**
+ * Résout les arguments d'un contrôleur via une chaîne de ValueResolvers.
+ *
+ * Ordre par défaut :
+ *   1. RequestValueResolver     — Injecte Request
+ *   2. (ValueResolvers custom)  — EntityValueResolver, ServiceValueResolver, etc.
+ *   3. RouteParameterValueResolver — Paramètres de route (string, int, float, bool)
+ *   4. DefaultValueResolver     — Valeurs par défaut et null
+ *
+ * Les resolvers custom (Entity, Service) sont insérés AVANT RouteParameter
+ * pour qu'un type-hint `Article $article` soit résolu en entité
+ * plutôt qu'en string depuis les attributs de route.
+ */
 class ArgumentResolver implements ArgumentResolverInterface
 {
+    /** @var ValueResolverInterface[] */
+    private array $resolvers;
+
+    /**
+     * @param ValueResolverInterface[] $additionalResolvers Resolvers custom (Entity, Service, etc.)
+     */
+    public function __construct(array $additionalResolvers = [])
+    {
+        $this->resolvers = array_merge(
+            [new RequestValueResolver()],
+            $additionalResolvers,
+            [new RouteParameterValueResolver()],
+            [new DefaultValueResolver()],
+        );
+    }
+
+    /**
+     * Ajoute un resolver custom. Il sera inséré avant RouteParameter et Default.
+     */
+    public function addResolver(ValueResolverInterface $resolver): void
+    {
+        // Insérer avant les 2 derniers (RouteParameter + Default)
+        array_splice($this->resolvers, -2, 0, [$resolver]);
+    }
+
     public function getArguments(Request $request, callable $controller): array
     {
         $reflection = $this->getReflection($controller);
         $arguments = [];
 
         foreach ($reflection->getParameters() as $param) {
-            $name = $param->getName();
-            $type = $param->getType();
+            $resolved = false;
 
-            // Si le paramètre type-hint Request, on injecte la Request
-            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                $typeName = $type->getName();
-                if ($typeName === Request::class || is_subclass_of($typeName, Request::class)) {
-                    $arguments[] = $request;
-                    continue;
+            foreach ($this->resolvers as $resolver) {
+                $result = $resolver->resolve($request, $param);
+
+                if (!empty($result)) {
+                    $arguments[] = $result[0];
+                    $resolved = true;
+                    break;
                 }
             }
 
-            // Chercher dans les attributs de la Request (paramètres de route)
-            if ($request->attributes->has($name)) {
-                $value = $request->attributes->get($name);
-
-                // Cast automatique si le type est int ou float
-                if ($type instanceof \ReflectionNamedType && $type->isBuiltin()) {
-                    $value = match ($type->getName()) {
-                        'int' => (int) $value,
-                        'float' => (float) $value,
-                        'bool' => (bool) $value,
-                        default => $value,
-                    };
-                }
-
-                $arguments[] = $value;
-                continue;
+            if (!$resolved) {
+                throw new \RuntimeException(sprintf(
+                    'Impossible de résoudre l\'argument "$%s" (type: %s) du contrôleur. '
+                    . 'Aucun ValueResolver ne peut le fournir.',
+                    $param->getName(),
+                    $param->getType() instanceof \ReflectionNamedType ? $param->getType()->getName() : 'mixed',
+                ));
             }
-
-            // Valeur par défaut
-            if ($param->isDefaultValueAvailable()) {
-                $arguments[] = $param->getDefaultValue();
-                continue;
-            }
-
-            // Nullable
-            if ($param->allowsNull()) {
-                $arguments[] = null;
-                continue;
-            }
-
-            throw new \RuntimeException(sprintf(
-                'Impossible de résoudre l\'argument "$%s" du contrôleur.',
-                $name,
-            ));
         }
 
         return $arguments;

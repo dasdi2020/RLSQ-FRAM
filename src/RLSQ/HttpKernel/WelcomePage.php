@@ -442,10 +442,14 @@ CODE);
 
     private static function docController(): string
     {
-        return self::docPanel('doc-controller', 'Controller', 'Classe de base avec raccourcis et attribut #[Route] pour d&eacute;clarer les routes sur les m&eacute;thodes.', <<<'CLASSES'
+        return self::docPanel('doc-controller', 'Controller', 'Classe de base avec raccourcis, attribut #[Route], et injection automatique de tous les types dans les m&eacute;thodes.', <<<'CLASSES'
 <b>AbstractController</b> — json(), render(), redirect(), redirectToRoute(), generateUrl(), addFlash(), getParameter(), createNotFoundException()
 <b>#[Route]</b> — Attribut PHP 8 : path, name, methods, requirements, defaults
 <b>AttributeRouteLoader</b> — Scanne les #[Route] pour générer les RouteCollection
+<b>ValueResolverInterface</b> — Interface pour les résolveurs d'arguments personnalisés
+<b>EntityValueResolver</b> — Injecte une entité #[Entity] depuis {id} automatiquement
+<b>ServiceValueResolver</b> — Injecte un service du Container par type-hint
+<b>#[MapEntity(id: 'field')]</b> — Mappe un paramètre de route à un champ d'entité
 <b>HttpException / NotFoundHttpException / AccessDeniedHttpException</b>
 CLASSES, <<<'CODE'
 <span class="k">use</span> RLSQ\Controller\AbstractController;
@@ -482,6 +486,34 @@ CLASSES, <<<'CODE'
 <span class="c">// Charger les routes depuis les attributs</span>
 $loader = <span class="k">new</span> AttributeRouteLoader();
 $routes = $loader->loadAll([ArticleController::<span class="k">class</span>, UserController::<span class="k">class</span>]);
+
+<span class="c">// === Injection automatique dans les méthodes ===</span>
+
+<span class="c">// Entité automatique depuis {id}</span>
+<span class="k">#[Route(<span class="s">'/article/{id}'</span>)]</span>
+<span class="k">public function</span> show(Article $article): Response
+{
+    <span class="c">// Article chargé automatiquement ! 404 si introuvable.</span>
+    <span class="k">return</span> <span class="k">$this</span>->json([<span class="s">'title'</span> => $article->title]);
+}
+
+<span class="c">// MapEntity pour un champ personnalisé</span>
+<span class="k">#[Route(<span class="s">'/user/{user_id}/posts'</span>)]</span>
+<span class="k">public function</span> posts(#[MapEntity(id: <span class="s">'user_id'</span>)] User $user): Response { <span class="c">/* ... */</span> }
+
+<span class="c">// Service injecté par type-hint</span>
+<span class="k">#[Route(<span class="s">'/send'</span>)]</span>
+<span class="k">public function</span> send(Mailer $mailer, Request $request): Response
+{
+    $mailer->send(...); <span class="c">// Mailer injecté depuis le Container</span>
+}
+
+<span class="c">// Mix de tout : entité + service + request + scalaire</span>
+<span class="k">#[Route(<span class="s">'/article/{id}/comment'</span>)]</span>
+<span class="k">public function</span> comment(Article $article, Mailer $mailer, Request $req, <span class="k">int</span> $page = <span class="n">1</span>): Response
+{
+    <span class="c">// Tout est résolu automatiquement !</span>
+}
 CODE);
     }
 
