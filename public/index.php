@@ -33,6 +33,8 @@ $loader = new AttributeRouteLoader();
 $routes->addCollection($loader->loadAll([
     \App\Controller\AuthController::class,
     \App\Controller\AdminTenantController::class,
+    \App\Controller\SchemaController::class,
+    \App\Controller\DynamicDataController::class,
 ]));
 
 // --- Page d'accueil ---
