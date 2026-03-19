@@ -103,6 +103,9 @@ class WelcomePage
             <div class="component-tag"><span class="icon">&#128452;&#65039;</span>Database/ORM</div>
             <div class="component-tag"><span class="icon">&#128274;</span>Security</div>
             <div class="component-tag"><span class="icon">&#128221;</span>Form</div>
+            <div class="component-tag"><span class="icon">&#128196;</span>Dotenv</div>
+            <div class="component-tag"><span class="icon">&#9993;</span>Mailer</div>
+            <div class="component-tag"><span class="icon">&#128270;</span>Profiler</div>
         </div>
 
         <h2 class="section-title" style="margin-top:40px;">Routes enregistr&eacute;es</h2>
@@ -148,6 +151,9 @@ class WelcomePage
             ['id' => 'doc-database', 'title' => 'Database / ORM', 'icon' => '&#128452;&#65039;'],
             ['id' => 'doc-security', 'title' => 'Security', 'icon' => '&#128274;'],
             ['id' => 'doc-form', 'title' => 'Form', 'icon' => '&#128221;'],
+            ['id' => 'doc-dotenv', 'title' => 'Dotenv', 'icon' => '&#128196;'],
+            ['id' => 'doc-mailer', 'title' => 'Mailer', 'icon' => '&#9993;'],
+            ['id' => 'doc-profiler', 'title' => 'Profiler', 'icon' => '&#128270;'],
         ];
 
         $nav = '';
@@ -167,7 +173,10 @@ class WelcomePage
             . self::docConsole()
             . self::docDatabase()
             . self::docSecurity()
-            . self::docForm();
+            . self::docForm()
+            . self::docDotenv()
+            . self::docMailer()
+            . self::docProfiler();
 
         return <<<HTML
         <div class="docs-layout">
@@ -717,6 +726,178 @@ $form->handleRequest($request);
 
 <span class="c">// Rendu HTML</span>
 $html = $form->createView()->render(); <span class="c">// Formulaire complet</span>
+CODE);
+    }
+
+    private static function docDotenv(): string
+    {
+        return self::docPanel('doc-dotenv', 'Dotenv', 'Gestion des variables d&apos;environnement via des fichiers <code class="inline-code">.env</code>. Ordre de chargement : .env &rarr; .env.local &rarr; .env.{APP_ENV} &rarr; .env.{APP_ENV}.local', <<<'CLASSES'
+<b>Dotenv</b> — load(), loadFile(), get(), has(), all(), loadIn() (raccourci statique)
+CLASSES, <<<'CODE'
+<span class="c">// Charger les variables d'environnement</span>
+$dotenv = Dotenv::loadIn(__DIR__);
+<span class="c">// Charge : .env → .env.local → .env.dev → .env.dev.local</span>
+
+<span class="c">// Accéder aux valeurs</span>
+$dotenv->get(<span class="s">'APP_ENV'</span>);                   <span class="c">// 'dev'</span>
+$dotenv->get(<span class="s">'DB_HOST'</span>, <span class="s">'localhost'</span>);     <span class="c">// Avec valeur par défaut</span>
+$dotenv->has(<span class="s">'APP_SECRET'</span>);                <span class="c">// true/false</span>
+
+<span class="c">// Aussi disponible dans les superglobales</span>
+$_ENV[<span class="s">'APP_ENV'</span>];
+$_SERVER[<span class="s">'APP_ENV'</span>];
+getenv(<span class="s">'APP_ENV'</span>);
+
+<span class="c">// === Syntaxe du fichier .env ===</span>
+
+APP_ENV=dev
+APP_DEBUG=<span class="k">true</span>
+APP_SECRET=change_me
+
+<span class="c"># Valeurs entre guillemets</span>
+DB_URL=<span class="s">"mysql://user:pass@localhost/mydb"</span>
+SIMPLE=<span class="s">'no interpolation here'</span>
+
+<span class="c"># Interpolation de variables</span>
+DB_HOST=localhost
+DB_NAME=myapp
+DB_URL=mysql://${DB_HOST}/${DB_NAME}
+
+<span class="c"># Export (compatible shell)</span>
+<span class="k">export</span> API_KEY=abc123
+
+<span class="c"># Commentaires inline</span>
+PORT=<span class="n">8080</span> <span class="c"># Port du serveur</span>
+CODE);
+    }
+
+    private static function docMailer(): string
+    {
+        return self::docPanel('doc-mailer', 'Mailer', 'Syst&egrave;me d&apos;envoi d&apos;emails avec file d&apos;attente (queue), transports multiples et commandes console.', <<<'CLASSES'
+<b>Email</b> — Builder fluide : from(), to(), cc(), bcc(), subject(), text(), html(), priority()
+<b>Mailer</b> — Façade : send() immédiat, queue() différé, processQueue(limit)
+<b>TransportInterface</b> — Interface pour les transports
+<b>NullTransport</b> — Ne fait rien (dev/test)
+<b>SmtpTransport</b> — Envoi via mail() PHP
+<b>LogTransport</b> — Écrit les emails dans var/mail_log/*.eml
+<b>QueueInterface</b> — Interface pour les queues
+<b>FilesystemQueue</b> — Persistance JSON dans var/mail_queue/, tri par priorité
+<b>InMemoryQueue</b> — Queue en mémoire (tests)
+CLASSES, <<<'CODE'
+<span class="c">// Créer un email</span>
+$email = (<span class="k">new</span> Email())
+    ->from(<span class="s">'sender@app.com'</span>)
+    ->to(<span class="s">'alice@example.com'</span>, <span class="s">'bob@example.com'</span>)
+    ->cc(<span class="s">'manager@example.com'</span>)
+    ->subject(<span class="s">'Bienvenue !'</span>)
+    ->text(<span class="s">'Bienvenue sur notre plateforme.'</span>)
+    ->html(<span class="s">'&lt;h1&gt;Bienvenue&lt;/h1&gt;&lt;p&gt;Merci de votre inscription.&lt;/p&gt;'</span>)
+    ->priority(<span class="n">1</span>); <span class="c">// 1=urgent, 5=basse</span>
+
+<span class="c">// Configurer le mailer</span>
+$transport = <span class="k">new</span> LogTransport(<span class="s">'var/mail_log'</span>);       <span class="c">// Dev</span>
+$queue = <span class="k">new</span> FilesystemQueue(<span class="s">'var/mail_queue'</span>);      <span class="c">// Persistant</span>
+$mailer = <span class="k">new</span> Mailer($transport, $queue);
+$mailer->setDefaultFrom(<span class="s">'noreply@app.com'</span>);
+
+<span class="c">// Envoi immédiat</span>
+$mailer->send($email);
+
+<span class="c">// Mise en file d'attente</span>
+$mailer->queue($email);
+
+<span class="c">// Traiter la queue (dans un worker/cron)</span>
+$sent = $mailer->processQueue(limit: <span class="n">50</span>);
+
+<span class="c">// === Commandes console ===</span>
+<span class="c">// Envoyer un email de test</span>
+php bin/console mailer:send-test user@example.com
+php bin/console mailer:send-test user@example.com --queue
+
+<span class="c">// Voir le statut de la queue</span>
+php bin/console mailer:queue:status
+
+<span class="c">// Traiter les emails en queue</span>
+php bin/console mailer:queue:process --limit=<span class="n">50</span>
+
+<span class="c">// === Dans un contrôleur ===</span>
+<span class="k">class</span> ContactController <span class="k">extends</span> AbstractController
+{
+    <span class="k">public function</span> send(Request $request, Mailer $mailer): Response
+    {
+        $email = (<span class="k">new</span> Email())
+            ->to($request->request->get(<span class="s">'email'</span>))
+            ->subject(<span class="s">'Confirmation'</span>)
+            ->html(<span class="k">$this</span>->render(<span class="s">'emails/confirm.html'</span>, [...]));
+
+        $mailer->queue($email); <span class="c">// Non-bloquant</span>
+
+        <span class="k">return</span> <span class="k">$this</span>->redirectToRoute(<span class="s">'contact_success'</span>);
+    }
+}
+CODE);
+    }
+
+    private static function docProfiler(): string
+    {
+        return self::docPanel('doc-profiler', 'Profiler', 'Web Debug Toolbar et panneau de profiling. Collecte les donn&eacute;es de chaque requ&ecirc;te pour le d&eacute;bogage.', <<<'CLASSES'
+<b>Profiler</b> — Orchestre les collectors, mesure durée et mémoire
+<b>DataCollectorInterface</b> — Interface pour créer un collector custom
+<b>RequestCollector</b> — Method, path, headers, status code, IP
+<b>RouteCollector</b> — Route name, controller, paramètres
+<b>PerformanceCollector</b> — Durée (ms), mémoire peak, PHP version
+<b>EventCollector</b> — Événements dispatchés, nombre de listeners
+<b>MailerCollector</b> — Emails envoyés, en queue, erreurs
+<b>WebDebugToolbar</b> — Génère le HTML de la toolbar
+<b>ProfilerListener</b> — Injecte la toolbar dans les réponses HTML
+<b>TraceableEventDispatcher</b> — EventDispatcher qui trace les événements
+CLASSES, <<<'CODE'
+<span class="c">// La toolbar est injectée automatiquement en mode debug.</span>
+<span class="c">// Configurer dans public/index.php :</span>
+
+$profiler = <span class="k">new</span> Profiler();
+
+<span class="c">// Ajouter les collectors standard</span>
+$profiler->addCollector(<span class="k">new</span> RequestCollector());
+$profiler->addCollector(<span class="k">new</span> RouteCollector());
+$profiler->addCollector(<span class="k">new</span> PerformanceCollector($profiler));
+$profiler->addCollector(<span class="k">new</span> EventCollector($dispatcher));
+$profiler->addCollector(<span class="k">new</span> MailerCollector($mailer));
+
+<span class="c">// Le ProfilerListener injecte la toolbar avant &lt;/body&gt;</span>
+$dispatcher->addSubscriber(
+    <span class="k">new</span> ProfilerListener($profiler, <span class="k">new</span> WebDebugToolbar(), enabled: $debug)
+);
+
+<span class="c">// === Créer un collector personnalisé ===</span>
+<span class="k">class</span> DatabaseCollector <span class="k">implements</span> DataCollectorInterface
+{
+    <span class="k">private array</span> $data = [];
+
+    <span class="k">public function</span> collect(Request $req, Response $res, ?\Throwable $e = <span class="k">null</span>): <span class="k">void</span>
+    {
+        <span class="k">$this</span>->data = [
+            <span class="s">'query_count'</span> => <span class="n">42</span>,
+            <span class="s">'queries'</span>    => [<span class="c">/* ... */</span>],
+        ];
+    }
+
+    <span class="k">public function</span> getName(): <span class="k">string</span> { <span class="k">return</span> <span class="s">'database'</span>; }
+    <span class="k">public function</span> getData(): <span class="k">array</span>  { <span class="k">return</span> <span class="k">$this</span>->data; }
+}
+
+$profiler->addCollector(<span class="k">new</span> DatabaseCollector());
+
+<span class="c">// === Onglets de la toolbar ===</span>
+<span class="c">// Request   — Method, path, status, headers req/resp</span>
+<span class="c">// Routing   — Route name, controller, paramètres</span>
+<span class="c">// Perf      — Durée ms, mémoire, PHP/SAPI</span>
+<span class="c">// Events    — Liste des événements dispatchés</span>
+<span class="c">// Mailer    — Emails envoyés, en queue, erreurs</span>
+
+<span class="c">// Désactiver la toolbar :</span>
+<span class="k">new</span> ProfilerListener($profiler, $toolbar, enabled: <span class="k">false</span>);
+<span class="c">// Ou via .env : APP_DEBUG=false</span>
 CODE);
     }
 
