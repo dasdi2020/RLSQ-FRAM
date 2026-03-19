@@ -263,6 +263,19 @@ class Kernel
             new \RLSQ\Security\TwoFactor\TwoFactorManager($c->get('database.connection')));
         $c->set(\RLSQ\Security\TwoFactor\EmailCodeSender::class,
             new \RLSQ\Security\TwoFactor\EmailCodeSender($c->get('mailer')));
+
+        // Plugin system
+        $registry = new \RLSQ\Plugin\PluginRegistry();
+        $registry->register(new \App\Plugin\FormationPlugin\FormationPlugin());
+        $registry->register(new \App\Plugin\ActivityPlugin\ActivityPlugin());
+        $registry->register(new \App\Plugin\CalendarPlugin\CalendarPlugin());
+        $registry->register(new \App\Plugin\RoomBookingPlugin\RoomBookingPlugin());
+        $c->set('plugin.registry', $registry);
+        $c->setAlias(\RLSQ\Plugin\PluginRegistry::class, 'plugin.registry');
+
+        $pluginManager = new \RLSQ\Plugin\PluginManager($registry);
+        $c->set('plugin.manager', $pluginManager);
+        $c->setAlias(\RLSQ\Plugin\PluginManager::class, 'plugin.manager');
     }
 
     private function registerEventSubscribers(): void
