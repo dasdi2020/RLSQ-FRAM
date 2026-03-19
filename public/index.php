@@ -2,60 +2,55 @@
 
 declare(strict_types=1);
 
-use RLSQ\Dotenv\Dotenv;
+use RLSQ\Controller\Attribute\AttributeRouteLoader;
 use RLSQ\HttpFoundation\JsonResponse;
 use RLSQ\HttpFoundation\Request;
 use RLSQ\HttpFoundation\Response;
-use RLSQ\HttpKernel\Controller\ArgumentResolver;
-use RLSQ\HttpKernel\Controller\ControllerResolver;
-use RLSQ\HttpKernel\EventListener\ExceptionListener;
-use RLSQ\HttpKernel\EventListener\RouterListener;
-use RLSQ\HttpKernel\HttpKernel;
 use RLSQ\HttpKernel\WelcomePage;
-use RLSQ\Mailer\Email;
-use RLSQ\Mailer\Mailer;
-use RLSQ\Mailer\Queue\FilesystemQueue;
-use RLSQ\Mailer\Transport\LogTransport;
-use RLSQ\Profiler\Collector\EventCollector;
-use RLSQ\Profiler\Collector\MailerCollector;
-use RLSQ\Profiler\Collector\PerformanceCollector;
-use RLSQ\Profiler\Collector\RequestCollector;
-use RLSQ\Profiler\Collector\RouteCollector;
-use RLSQ\Profiler\Profiler;
-use RLSQ\Profiler\ProfilerListener;
-use RLSQ\Profiler\TraceableEventDispatcher;
-use RLSQ\Profiler\WebDebugToolbar;
-use RLSQ\Routing\Matcher\UrlMatcher;
+use RLSQ\Kernel;
 use RLSQ\Routing\Route;
-use RLSQ\Routing\RouteCollection;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// --- Environment ---
-$dotenv = Dotenv::loadIn(dirname(__DIR__));
-$debug = ($dotenv->get('APP_DEBUG', 'true') === 'true');
+// --- Kernel Boot ---
+$kernel = new Kernel(dirname(__DIR__));
+$kernel->boot();
 
-// --- Profiler ---
-$profiler = new Profiler();
+$container = $kernel->getContainer();
+$routes = $container->get('route_collection');
 
-// --- Mailer ---
-$projectDir = dirname(__DIR__);
-$mailQueue = new FilesystemQueue($projectDir . '/var/mail_queue');
-$mailer = new Mailer(new LogTransport($projectDir . '/var/mail_log'), $mailQueue);
-$mailer->setDefaultFrom($dotenv->get('MAILER_FROM', 'noreply@rlsq-fram.local'));
+// --- Enregistrer les services 2FA ---
+$container->set(
+    \RLSQ\Security\TwoFactor\TwoFactorManager::class,
+    new \RLSQ\Security\TwoFactor\TwoFactorManager($container->get('database.connection')),
+);
+$container->set(
+    \RLSQ\Security\TwoFactor\EmailCodeSender::class,
+    new \RLSQ\Security\TwoFactor\EmailCodeSender($container->get('mailer')),
+);
 
-// --- Routes ---
-$routes = new RouteCollection();
+// --- Exécuter les migrations au premier démarrage ---
+$migrationManager = new \RLSQ\Database\Migration\MigrationManager($container->get('database.connection'));
+$migrationManager->addMigrations([
+    new \App\Migration\M001_CreateUsersTable(),
+    new \App\Migration\M002_SeedSuperAdmin(),
+]);
+$migrationManager->migrate();
 
+// --- Routes applicatives (contrôleurs) ---
+$loader = new AttributeRouteLoader();
+$routes->addCollection($loader->load(\App\Controller\AuthController::class));
+
+// --- Page d'accueil ---
 $routes->add('home', new Route('/', [
     '_controller' => function () use ($routes): Response {
         $routeInfos = [];
         foreach ($routes->all() as $name => $route) {
-            $controller = $route->getController();
+            $ctrl = $route->getController();
             $routeInfos[$name] = [
                 'path' => $route->getPath(),
                 'methods' => $route->getMethods() ?: ['ANY'],
-                'controller' => is_string($controller) ? $controller : (is_callable($controller) ? 'Closure' : 'N/A'),
+                'controller' => is_string($ctrl) ? $ctrl : (is_callable($ctrl) ? 'Closure' : 'N/A'),
             ];
         }
 
@@ -63,128 +58,74 @@ $routes->add('home', new Route('/', [
     },
 ]));
 
+// --- API Status ---
 $routes->add('api_status', new Route('/api/status', [
-    '_controller' => function () use ($dotenv, $mailQueue): JsonResponse {
+    '_controller' => function () use ($container): JsonResponse {
         return new JsonResponse([
             'status' => 'ok',
             'framework' => 'RLSQ-FRAM',
             'version' => '0.1.0',
             'php' => PHP_VERSION,
-            'env' => $dotenv->get('APP_ENV', 'dev'),
-            'mail_queue' => $mailQueue->count(),
+            'env' => $container->getParameter('kernel.environment'),
         ]);
     },
 ], ['GET']));
 
-// Exemple : route pour envoyer un email de test (et voir dans le profiler)
-$routes->add('api_mail_test', new Route('/api/mail/test', [
-    '_controller' => function (Request $request) use ($mailer): JsonResponse {
-        $email = (new Email())
-            ->to('test@example.com')
-            ->subject('Test depuis RLSQ-FRAM')
-            ->text('Ceci est un email de test.')
-            ->html('<h1>RLSQ-FRAM</h1><p>Email de test envoyé le ' . date('Y-m-d H:i:s') . '</p>');
-
-        $mailer->send($email);
-
-        return new JsonResponse(['status' => 'sent', 'id' => $email->getId()]);
-    },
-], ['POST']));
-
-$routes->add('api_mail_queue', new Route('/api/mail/queue', [
-    '_controller' => function () use ($mailer): JsonResponse {
-        $email = (new Email())
-            ->to('queued@example.com')
-            ->subject('Email en queue')
-            ->text('Cet email sera envoyé par le worker.')
-            ->priority(2);
-
-        $mailer->queue($email);
-
-        return new JsonResponse(['status' => 'queued', 'id' => $email->getId(), 'pending' => $mailer->getQueue()->count()]);
-    },
-], ['POST']));
-
-// --- OpenAPI + Swagger UI ---
+// --- OpenAPI / Swagger ---
 $routes->add('openapi_spec', new Route('/api/openapi.json', [
     '_controller' => function () use ($routes): JsonResponse {
-        $gen = new \RLSQ\OpenApi\OpenApiGenerator('RLSQ-FRAM API', '0.1.0', 'API du framework RLSQ-FRAM');
-        $spec = $gen->generateFromRoutes($routes);
+        $gen = new \RLSQ\OpenApi\OpenApiGenerator('RLSQ-FRAM API', '0.1.0', 'API de la plateforme RLSQ-FRAM');
+        $spec = $gen->generateFromControllers([\App\Controller\AuthController::class]);
+        // Fusionner avec les routes manuelles
+        $routeSpec = $gen->generateFromRoutes($routes);
+        foreach ($routeSpec['paths'] ?? [] as $path => $methods) {
+            if (!isset($spec['paths'][$path])) {
+                $spec['paths'][$path] = $methods;
+            }
+        }
+
         return new JsonResponse($spec);
     },
 ], ['GET']));
 
 $routes->add('swagger_ui', new Route('/api/docs', [
-    '_controller' => function (): Response {
-        return new Response(
-            \RLSQ\OpenApi\SwaggerUi::render('/api/openapi.json'),
-            200,
-            ['Content-Type' => 'text/html; charset=UTF-8'],
-        );
-    },
+    '_controller' => fn () => new Response(
+        \RLSQ\OpenApi\SwaggerUi::render('/api/openapi.json'),
+        200,
+        ['Content-Type' => 'text/html; charset=UTF-8'],
+    ),
 ], ['GET']));
 
 // --- GraphQL ---
-$graphqlSchema = new \RLSQ\GraphQL\Schema();
-$graphqlSchema->addType(
+$gqlSchema = new \RLSQ\GraphQL\Schema();
+$gqlSchema->addType(
     (new \RLSQ\GraphQL\TypeDefinition('Status'))
         ->addField('status', 'String!')
         ->addField('framework', 'String!')
         ->addField('php', 'String!')
-        ->addField('mail_queue', 'Int!'),
 );
-$graphqlSchema->addQuery('status', new \RLSQ\GraphQL\FieldDefinition(
+$gqlSchema->addQuery('status', new \RLSQ\GraphQL\FieldDefinition(
     'Status',
-    fn ($ctx, $args) => ['status' => 'ok', 'framework' => 'RLSQ-FRAM', 'php' => PHP_VERSION, 'mail_queue' => $mailQueue->count()],
+    fn () => ['status' => 'ok', 'framework' => 'RLSQ-FRAM', 'php' => PHP_VERSION],
 ));
-$graphqlSchema->addQuery('hello', (new \RLSQ\GraphQL\FieldDefinition(
-    'String!',
-    fn ($ctx, $args) => 'Hello ' . ($args['name'] ?? 'World'),
-))->addArg('name', 'String'));
-
-$graphqlExecutor = new \RLSQ\GraphQL\Executor($graphqlSchema);
+$gqlExecutor = new \RLSQ\GraphQL\Executor($gqlSchema);
 
 $routes->add('graphql', new Route('/graphql', [
-    '_controller' => function (Request $request) use ($graphqlExecutor): JsonResponse {
+    '_controller' => function (Request $request) use ($gqlExecutor): JsonResponse {
         $body = json_decode($request->getContent(), true) ?? [];
-        $query = $body['query'] ?? '';
-        $variables = $body['variables'] ?? [];
-        return new JsonResponse($graphqlExecutor->execute($query, $variables));
+        return new JsonResponse($gqlExecutor->execute($body['query'] ?? '', $body['variables'] ?? []));
     },
 ], ['POST']));
 
 $routes->add('graphiql', new Route('/graphiql', [
-    '_controller' => function (): Response {
-        return new Response(
-            \RLSQ\GraphQL\GraphiQL::render('/graphql'),
-            200,
-            ['Content-Type' => 'text/html; charset=UTF-8'],
-        );
-    },
+    '_controller' => fn () => new Response(
+        \RLSQ\GraphQL\GraphiQL::render('/graphql'),
+        200,
+        ['Content-Type' => 'text/html; charset=UTF-8'],
+    ),
 ], ['GET']));
 
-// --- Event Dispatcher ---
-$dispatcher = new TraceableEventDispatcher();
-
-$eventCollector = new EventCollector($dispatcher);
-$dispatcher->setEventCollector($eventCollector);
-
-$profiler->addCollector(new RequestCollector());
-$profiler->addCollector(new RouteCollector());
-$profiler->addCollector(new PerformanceCollector($profiler));
-$profiler->addCollector($eventCollector);
-$profiler->addCollector(new MailerCollector($mailer));
-
-// --- Listeners ---
-$tokenStorage = new \RLSQ\Security\Authentication\TokenStorage();
-$dispatcher->addSubscriber(new RouterListener(new UrlMatcher($routes)));
-$dispatcher->addSubscriber(new \RLSQ\Security\SecurityListener($tokenStorage));
-$dispatcher->addSubscriber(new ExceptionListener(debug: $debug));
-$dispatcher->addSubscriber(new ProfilerListener($profiler, new WebDebugToolbar(), enabled: $debug));
-
-// --- Kernel ---
-$kernel = new HttpKernel($dispatcher, new ControllerResolver(), new ArgumentResolver());
-
+// --- Handle ---
 $request = Request::createFromGlobals();
 $response = $kernel->handle($request);
 $response->send();

@@ -6,29 +6,73 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 use RLSQ\Console\Application;
-use RLSQ\Dotenv\Dotenv;
+use RLSQ\Console\Command\Command;
+use RLSQ\Console\Input\InputInterface;
+use RLSQ\Console\Output\OutputInterface;
+use RLSQ\Database\Migration\MigrationManager;
+use RLSQ\Kernel;
 use RLSQ\Mailer\Command\MailerQueueProcessCommand;
 use RLSQ\Mailer\Command\MailerQueueStatusCommand;
 use RLSQ\Mailer\Command\MailerSendTestCommand;
-use RLSQ\Mailer\Mailer;
-use RLSQ\Mailer\Queue\FilesystemQueue;
-use RLSQ\Mailer\Transport\LogTransport;
 
-// --- Environment ---
-$dotenv = Dotenv::loadIn(dirname(__DIR__));
-$projectDir = dirname(__DIR__);
-
-// --- Mailer ---
-$mailQueue = new FilesystemQueue($projectDir . '/var/mail_queue');
-$mailer = new Mailer(new LogTransport($projectDir . '/var/mail_log'), $mailQueue);
-$mailer->setDefaultFrom($dotenv->get('MAILER_FROM', 'noreply@rlsq-fram.local'));
+// --- Boot Kernel ---
+$kernel = new Kernel(dirname(__DIR__));
+$kernel->boot();
+$container = $kernel->getContainer();
 
 // --- Console Application ---
 $app = new Application('RLSQ-FRAM', '0.1.0');
 
 // Mailer commands
-$app->add(new MailerQueueProcessCommand($mailer));
-$app->add(new MailerQueueStatusCommand($mailer));
-$app->add(new MailerSendTestCommand($mailer));
+$app->add(new MailerQueueProcessCommand($container->get('mailer')));
+$app->add(new MailerQueueStatusCommand($container->get('mailer')));
+$app->add(new MailerSendTestCommand($container->get('mailer')));
+
+// Migration commands
+$migrationManager = new MigrationManager($container->get('database.connection'));
+$migrationManager->addMigrations([
+    new \App\Migration\M001_CreateUsersTable(),
+    new \App\Migration\M002_SeedSuperAdmin(),
+]);
+
+// migration:run
+$migCmd = new class($migrationManager) extends Command {
+    public function __construct(private readonly MigrationManager $mgr) { parent::__construct('migration:run'); }
+    protected function configure(): void { $this->setDescription('Exécute les migrations en attente'); }
+    protected function execute(InputInterface $input, OutputInterface $output): int {
+        $count = $this->mgr->migrate();
+        $output->writeln($count > 0 ? "{$count} migration(s) exécutée(s)." : 'Rien à migrer.');
+        return self::SUCCESS;
+    }
+};
+$app->add($migCmd);
+
+// migration:status
+$statusCmd = new class($migrationManager) extends Command {
+    public function __construct(private readonly MigrationManager $mgr) { parent::__construct('migration:status'); }
+    protected function configure(): void { $this->setDescription('Statut des migrations'); }
+    protected function execute(InputInterface $input, OutputInterface $output): int {
+        $table = new \RLSQ\Console\Helper\Table($output);
+        $table->setHeaders(['Version', 'Description', 'Statut']);
+        foreach ($this->mgr->getStatus() as $s) {
+            $table->addRow([$s['version'], $s['description'], $s['status']]);
+        }
+        $table->render();
+        return self::SUCCESS;
+    }
+};
+$app->add($statusCmd);
+
+// migration:rollback
+$rbCmd = new class($migrationManager) extends Command {
+    public function __construct(private readonly MigrationManager $mgr) { parent::__construct('migration:rollback'); }
+    protected function configure(): void { $this->setDescription('Rollback la dernière migration'); }
+    protected function execute(InputInterface $input, OutputInterface $output): int {
+        if ($this->mgr->rollback()) { $output->writeln('Rollback effectué.'); }
+        else { $output->writeln('Rien à rollback.'); }
+        return self::SUCCESS;
+    }
+};
+$app->add($rbCmd);
 
 exit($app->run());

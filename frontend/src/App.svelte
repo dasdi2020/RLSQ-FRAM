@@ -1,20 +1,13 @@
 <script>
-    let message = $state('RLSQ-FRAM fonctionne !');
+    import Router from 'svelte-spa-router';
+    import Login from './routes/Login.svelte';
+    import Dashboard from './routes/Dashboard.svelte';
+
+    const routes = {
+        '/': Login,
+        '/login': Login,
+        '/dashboard': Dashboard,
+    };
 </script>
 
-<main>
-    <h1>{message}</h1>
-    <p>Framework PHP + Svelte + Vite</p>
-</main>
-
-<style>
-    main {
-        font-family: system-ui, sans-serif;
-        text-align: center;
-        padding: 2rem;
-    }
-
-    h1 {
-        color: #ff3e00;
-    }
-</style>
+<Router {routes} />
