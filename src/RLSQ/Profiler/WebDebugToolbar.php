@@ -15,6 +15,7 @@ class WebDebugToolbar
         $route = $profiler->getCollector('route')?->getData() ?? [];
         $req = $profiler->getCollector('request')?->getData() ?? [];
         $events = $profiler->getCollector('events')?->getData() ?? [];
+        $mailer = $profiler->getCollector('mailer')?->getData() ?? [];
 
         $statusCode = $req['status_code'] ?? 200;
         $duration = $perf['duration_ms'] ?? 0;
@@ -31,9 +32,9 @@ class WebDebugToolbar
             default => '#2ecc71',
         };
 
-        $toolbarItems = $this->renderToolbarItems($req, $route, $perf, $events, $statusColor, $timeColor);
-        $panelTabs = $this->renderPanelTabs();
-        $panelContents = $this->renderPanelContents($req, $route, $perf, $events);
+        $toolbarItems = $this->renderToolbarItems($req, $route, $perf, $events, $mailer, $statusColor, $timeColor);
+        $panelTabs = $this->renderPanelTabs($mailer);
+        $panelContents = $this->renderPanelContents($req, $route, $perf, $events, $mailer);
         $css = $this->renderCSS();
         $js = $this->renderJS();
 
@@ -66,7 +67,7 @@ class WebDebugToolbar
         HTML;
     }
 
-    private function renderToolbarItems(array $req, array $route, array $perf, array $events, string $statusColor, string $timeColor): string
+    private function renderToolbarItems(array $req, array $route, array $perf, array $events, array $mailer, string $statusColor, string $timeColor): string
     {
         $statusCode = $req['status_code'] ?? 200;
         $duration = $perf['duration_ms'] ?? 0;
@@ -106,6 +107,13 @@ class WebDebugToolbar
             <span class="wdt-value">{$evtCount}</span>
         </div>
         <div class="wdt-sep"></div>
+        <div class="wdt-item wdt-clickable" onclick="rlsqWdt.open('mailer')" title="Mailer">
+            <svg class="wdt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span class="wdt-value">{$this->e((string)($mailer['sent_count'] ?? 0))}</span>
+            <span class="wdt-muted" style="font-size:11px">sent</span>
+            {$this->renderMailerQueueBadge($mailer)}
+        </div>
+        <div class="wdt-sep"></div>
         <div class="wdt-item" title="PHP Version">
             <svg class="wdt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
             <span class="wdt-value wdt-muted">PHP {$this->e($phpVersion)}</span>
@@ -113,13 +121,20 @@ class WebDebugToolbar
         HTML;
     }
 
-    private function renderPanelTabs(): string
+    private function renderPanelTabs(array $mailer = []): string
     {
+        $mailerBadge = '';
+        $total = ($mailer['sent_count'] ?? 0) + ($mailer['queued_count'] ?? 0) + ($mailer['pending_count'] ?? 0);
+        if ($total > 0) {
+            $mailerBadge = ' <span class="wdt-badge-sm">' . $total . '</span>';
+        }
+
         $tabs = [
             ['id' => 'request', 'icon' => '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>', 'label' => 'Request'],
             ['id' => 'routing', 'icon' => '<path d="M3 12h4l3-9 4 18 3-9h4"/>', 'label' => 'Routing'],
             ['id' => 'performance', 'icon' => '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', 'label' => 'Performance'],
             ['id' => 'events', 'icon' => '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', 'label' => 'Events'],
+            ['id' => 'mailer', 'icon' => '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>', 'label' => 'Mailer' . $mailerBadge],
         ];
 
         $html = '';
@@ -136,13 +151,14 @@ class WebDebugToolbar
         return $html;
     }
 
-    private function renderPanelContents(array $req, array $route, array $perf, array $events): string
+    private function renderPanelContents(array $req, array $route, array $perf, array $events, array $mailer): string
     {
         return
             $this->renderRequestPanel($req) .
             $this->renderRoutingPanel($route) .
             $this->renderPerformancePanel($perf) .
-            $this->renderEventsPanel($events);
+            $this->renderEventsPanel($events) .
+            $this->renderMailerPanel($mailer);
     }
 
     private function renderRequestPanel(array $data): string
@@ -433,6 +449,140 @@ class WebDebugToolbar
             }
         };
         JS;
+    }
+
+    private function renderMailerPanel(array $data): string
+    {
+        $transport = $this->e($data['transport'] ?? 'N/A');
+        $sentCount = $data['sent_count'] ?? 0;
+        $queuedCount = $data['queued_count'] ?? 0;
+        $failedCount = $data['failed_count'] ?? 0;
+        $pendingCount = $data['pending_count'] ?? 0;
+
+        // Sent emails table
+        $sentRows = '';
+        foreach (($data['sent'] ?? []) as $item) {
+            $sentRows .= '<tr>'
+                . '<td class="wdt-key">' . $this->e(substr($item['id'], 0, 8)) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['to']) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['subject']) . '</td>'
+                . '<td class="wdt-val"><span class="wdt-badge-sm" style="background:rgba(46,204,113,0.15);color:#2ecc71;">sent</span></td>'
+                . '<td class="wdt-val">' . $this->e($item['sent_at'] ?? '') . '</td>'
+                . '</tr>';
+        }
+        if ($sentRows === '') {
+            $sentRows = '<tr><td colspan="5" class="wdt-muted" style="padding:8px 12px;">Aucun email envoy&eacute; pendant cette requ&ecirc;te</td></tr>';
+        }
+
+        // Queued emails table
+        $queuedRows = '';
+        foreach (($data['queued'] ?? []) as $item) {
+            $queuedRows .= '<tr>'
+                . '<td class="wdt-key">' . $this->e(substr($item['id'], 0, 8)) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['to']) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['subject']) . '</td>'
+                . '<td class="wdt-val"><span class="wdt-badge-sm" style="background:rgba(52,152,219,0.15);color:#3498db;">queued</span></td>'
+                . '</tr>';
+        }
+
+        // Pending in queue
+        $pendingRows = '';
+        foreach (($data['pending_in_queue'] ?? []) as $item) {
+            $prioColor = match ($item['priority']) {
+                1 => '#e74c3c', 2 => '#f39c12', default => '#888',
+            };
+            $pendingRows .= '<tr>'
+                . '<td class="wdt-key">' . $this->e(substr($item['id'], 0, 8)) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['from']) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['to']) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['subject']) . '</td>'
+                . '<td class="wdt-val" style="color:' . $prioColor . '">' . $item['priority'] . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['created_at']) . '</td>'
+                . '</tr>';
+        }
+
+        // Failed
+        $failedRows = '';
+        foreach (($data['failed'] ?? []) as $item) {
+            $failedRows .= '<tr>'
+                . '<td class="wdt-key">' . $this->e(substr($item['id'], 0, 8)) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['to']) . '</td>'
+                . '<td class="wdt-val">' . $this->e($item['subject']) . '</td>'
+                . '<td class="wdt-val"><span class="wdt-badge-sm" style="background:rgba(231,76,60,0.15);color:#e74c3c;">' . $this->e($item['error'] ?? 'error') . '</span></td>'
+                . '</tr>';
+        }
+
+        $queueSection = '';
+        if ($queuedRows !== '' || $pendingCount > 0) {
+            $queueSection = '<div class="wdt-panel-section"><h4>Mis en queue pendant cette requ&ecirc;te</h4>';
+            if ($queuedRows !== '') {
+                $queueSection .= '<table class="wdt-table"><thead><tr><th>ID</th><th>A</th><th>Sujet</th><th>Status</th></tr></thead><tbody>' . $queuedRows . '</tbody></table>';
+            }
+            $queueSection .= '</div>';
+        }
+
+        $pendingSection = '';
+        if ($pendingCount > 0) {
+            $pendingSection = '<div class="wdt-panel-section"><h4>En attente dans la queue (' . $pendingCount . ')</h4>'
+                . '<table class="wdt-table"><thead><tr><th>ID</th><th>De</th><th>A</th><th>Sujet</th><th>Prio</th><th>Date</th></tr></thead>'
+                . '<tbody>' . $pendingRows . '</tbody></table></div>';
+        }
+
+        $failedSection = '';
+        if ($failedCount > 0) {
+            $failedSection = '<div class="wdt-panel-section"><h4>Erreurs (' . $failedCount . ')</h4>'
+                . '<table class="wdt-table"><thead><tr><th>ID</th><th>A</th><th>Sujet</th><th>Erreur</th></tr></thead>'
+                . '<tbody>' . $failedRows . '</tbody></table></div>';
+        }
+
+        return <<<HTML
+        <div class="wdt-panel" data-panel="mailer">
+            <h3>Mailer</h3>
+            <div class="wdt-panel-grid">
+                <div class="wdt-info-card">
+                    <div class="wdt-info-label">Transport</div>
+                    <div class="wdt-info-value wdt-mono">{$transport}</div>
+                </div>
+                <div class="wdt-info-card">
+                    <div class="wdt-info-label">Envoy&eacute;s</div>
+                    <div class="wdt-info-value wdt-big" style="color:#2ecc71">{$sentCount}</div>
+                </div>
+                <div class="wdt-info-card">
+                    <div class="wdt-info-label">En queue</div>
+                    <div class="wdt-info-value wdt-big" style="color:#3498db">{$pendingCount}</div>
+                </div>
+                <div class="wdt-info-card">
+                    <div class="wdt-info-label">Erreurs</div>
+                    <div class="wdt-info-value wdt-big" style="color:{$this->failedColor($failedCount)}">{$failedCount}</div>
+                </div>
+            </div>
+            <div class="wdt-panel-section">
+                <h4>Emails envoy&eacute;s</h4>
+                <table class="wdt-table">
+                    <thead><tr><th>ID</th><th>A</th><th>Sujet</th><th>Status</th><th>Heure</th></tr></thead>
+                    <tbody>{$sentRows}</tbody>
+                </table>
+            </div>
+            {$queueSection}
+            {$pendingSection}
+            {$failedSection}
+        </div>
+        HTML;
+    }
+
+    private function renderMailerQueueBadge(array $mailer): string
+    {
+        $pending = $mailer['pending_count'] ?? 0;
+        if ($pending === 0) {
+            return '';
+        }
+
+        return '<span class="wdt-badge" style="background:#3498db;font-size:10px;padding:0 5px;margin-left:2px;">' . $pending . ' queue</span>';
+    }
+
+    private function failedColor(int $count): string
+    {
+        return $count > 0 ? '#e74c3c' : '#2ecc71';
     }
 
     private function renderHeadersTable(array $headers): string

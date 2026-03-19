@@ -23,10 +23,9 @@ composer.lock
 .DS_Store
 Thumbs.db
 
-# Env
-.env
+# Env (local overrides)
 .env.local
+.env.*.local
 
 # Cache framework
-/var/cache/
-/var/log/
+/var/

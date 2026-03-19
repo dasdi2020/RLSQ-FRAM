@@ -6,10 +6,29 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 use RLSQ\Console\Application;
+use RLSQ\Dotenv\Dotenv;
+use RLSQ\Mailer\Command\MailerQueueProcessCommand;
+use RLSQ\Mailer\Command\MailerQueueStatusCommand;
+use RLSQ\Mailer\Command\MailerSendTestCommand;
+use RLSQ\Mailer\Mailer;
+use RLSQ\Mailer\Queue\FilesystemQueue;
+use RLSQ\Mailer\Transport\LogTransport;
 
+// --- Environment ---
+$dotenv = Dotenv::loadIn(dirname(__DIR__));
+$projectDir = dirname(__DIR__);
+
+// --- Mailer ---
+$mailQueue = new FilesystemQueue($projectDir . '/var/mail_queue');
+$mailer = new Mailer(new LogTransport($projectDir . '/var/mail_log'), $mailQueue);
+$mailer->setDefaultFrom($dotenv->get('MAILER_FROM', 'noreply@rlsq-fram.local'));
+
+// --- Console Application ---
 $app = new Application('RLSQ-FRAM', '0.1.0');
 
-// Les commandes custom seront enregistrées ici
-// $app->add(new App\Command\MaCommande());
+// Mailer commands
+$app->add(new MailerQueueProcessCommand($mailer));
+$app->add(new MailerQueueStatusCommand($mailer));
+$app->add(new MailerSendTestCommand($mailer));
 
 exit($app->run());
