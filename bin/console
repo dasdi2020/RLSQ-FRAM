@@ -33,6 +33,7 @@ $migrationManager = new MigrationManager($container->get('database.connection'))
 $migrationManager->addMigrations([
     new \App\Migration\M001_CreateUsersTable(),
     new \App\Migration\M002_SeedSuperAdmin(),
+    new \App\Migration\M003_CreateTenantsTable(),
 ]);
 
 // migration:run

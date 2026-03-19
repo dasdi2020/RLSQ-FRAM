@@ -19,27 +19,21 @@ $kernel->boot();
 $container = $kernel->getContainer();
 $routes = $container->get('route_collection');
 
-// --- Enregistrer les services 2FA ---
-$container->set(
-    \RLSQ\Security\TwoFactor\TwoFactorManager::class,
-    new \RLSQ\Security\TwoFactor\TwoFactorManager($container->get('database.connection')),
-);
-$container->set(
-    \RLSQ\Security\TwoFactor\EmailCodeSender::class,
-    new \RLSQ\Security\TwoFactor\EmailCodeSender($container->get('mailer')),
-);
-
 // --- Exécuter les migrations au premier démarrage ---
 $migrationManager = new \RLSQ\Database\Migration\MigrationManager($container->get('database.connection'));
 $migrationManager->addMigrations([
     new \App\Migration\M001_CreateUsersTable(),
     new \App\Migration\M002_SeedSuperAdmin(),
+    new \App\Migration\M003_CreateTenantsTable(),
 ]);
 $migrationManager->migrate();
 
 // --- Routes applicatives (contrôleurs) ---
 $loader = new AttributeRouteLoader();
-$routes->addCollection($loader->load(\App\Controller\AuthController::class));
+$routes->addCollection($loader->loadAll([
+    \App\Controller\AuthController::class,
+    \App\Controller\AdminTenantController::class,
+]));
 
 // --- Page d'accueil ---
 $routes->add('home', new Route('/', [

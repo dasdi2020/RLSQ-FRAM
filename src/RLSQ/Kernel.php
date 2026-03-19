@@ -232,8 +232,36 @@ class Kernel
 
     private function registerApplicationServices(): void
     {
-        // Les services applicatifs seront ajoutés ici ou via des config files
-        // Pour l'instant, c'est un placeholder
+        $c = $this->container;
+        $projectDir = $this->projectDir;
+
+        // Tenant system
+        $c->set('tenant.context', new \App\Tenant\TenantContext());
+        $c->setAlias(\App\Tenant\TenantContext::class, 'tenant.context');
+
+        $c->set('tenant.resolver', new \App\Tenant\TenantResolver($c->get('database.connection')));
+        $c->setAlias(\App\Tenant\TenantResolver::class, 'tenant.resolver');
+
+        $c->set('tenant.connection_factory', new \App\Tenant\Database\TenantConnectionFactory($projectDir));
+        $c->setAlias(\App\Tenant\Database\TenantConnectionFactory::class, 'tenant.connection_factory');
+
+        $provisioner = new \App\Tenant\Database\TenantDatabaseProvisioner($projectDir);
+        $provisioner->addBaseMigration(new \App\Tenant\Database\TenantBaseMigration());
+        $c->set('tenant.provisioner', $provisioner);
+        $c->setAlias(\App\Tenant\Database\TenantDatabaseProvisioner::class, 'tenant.provisioner');
+
+        $c->set('tenant.service', new \App\Tenant\TenantService(
+            $c->get('database.connection'),
+            $provisioner,
+            $projectDir,
+        ));
+        $c->setAlias(\App\Tenant\TenantService::class, 'tenant.service');
+
+        // 2FA
+        $c->set(\RLSQ\Security\TwoFactor\TwoFactorManager::class,
+            new \RLSQ\Security\TwoFactor\TwoFactorManager($c->get('database.connection')));
+        $c->set(\RLSQ\Security\TwoFactor\EmailCodeSender::class,
+            new \RLSQ\Security\TwoFactor\EmailCodeSender($c->get('mailer')));
     }
 
     private function registerEventSubscribers(): void
@@ -253,6 +281,12 @@ class Kernel
         $profiler->addCollector($this->container->get('collector.performance'));
         $profiler->addCollector($this->container->get('collector.event'));
         $profiler->addCollector($this->container->get('collector.mailer'));
+
+        // Tenant listener (before router)
+        $dispatcher->addSubscriber(new \App\Tenant\TenantListener(
+            $this->container->get('tenant.resolver'),
+            $this->container->get('tenant.context'),
+        ));
 
         // Core listeners
         $dispatcher->addSubscriber(new \RLSQ\HttpKernel\EventListener\RouterListener(
