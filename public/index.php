@@ -25,6 +25,7 @@ $migrationManager->addMigrations([
     new \App\Migration\M001_CreateUsersTable(),
     new \App\Migration\M002_SeedSuperAdmin(),
     new \App\Migration\M003_CreateTenantsTable(),
+    new \App\Migration\M004_CreateVersionsTables(),
 ]);
 $migrationManager->migrate();
 
@@ -41,6 +42,7 @@ $routes->addCollection($loader->loadAll([
     \App\Controller\FormBuilderController::class,
     \App\Plugin\PaymentPlugin\Controller\PaymentController::class,
     \App\Controller\PageBuilderController::class,
+    \App\Controller\VersioningController::class,
 ]));
 
 // --- Page d'accueil ---
