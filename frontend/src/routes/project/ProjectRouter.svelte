@@ -10,6 +10,7 @@
     import CmsPlugins from './CmsPlugins.svelte';
     import PageBuilderV2 from './PageBuilderV2.svelte';
     import CmsSettings from './CmsSettings.svelte';
+    import CmsCodeEditor from './CmsCodeEditor.svelte';
     import Card from '$lib/components/ui/Card.svelte';
 
     let { params = {} } = $props();
@@ -46,7 +47,9 @@
         <CmsPlugins projectSlug={slug} />
     {:else if subPath.startsWith('/settings')}
         <CmsSettings projectSlug={slug} />
-    {:else if subPath.startsWith('/database') || subPath.startsWith('/erd') || subPath.startsWith('/forms') || subPath.startsWith('/media') || subPath.startsWith('/code') || subPath.startsWith('/login-design') || subPath.startsWith('/preview') || subPath.startsWith('/deploy')}
+    {:else if subPath.startsWith('/code')}
+        <CmsCodeEditor projectSlug={slug} />
+    {:else if subPath.startsWith('/database') || subPath.startsWith('/erd') || subPath.startsWith('/forms') || subPath.startsWith('/media') || subPath.startsWith('/login-design') || subPath.startsWith('/preview') || subPath.startsWith('/deploy')}
         <!-- Placeholder pour les pages en développement -->
         <header class="h-14 border-b border-[var(--color-border)] flex items-center px-6">
             <h2 class="text-lg font-semibold capitalize">{subPath.replace('/', '')}</h2>

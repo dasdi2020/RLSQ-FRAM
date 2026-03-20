@@ -31,4 +31,9 @@ export default defineConfig({
             input: resolve(__dirname, 'src/main.js'),
         },
     },
+
+    // Monaco Editor needs these optimizations
+    optimizeDeps: {
+        include: ['monaco-editor'],
+    },
 });

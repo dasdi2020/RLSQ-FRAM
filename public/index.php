@@ -46,6 +46,7 @@ $routes->addCollection($loader->loadAll([
     \App\Controller\PageBuilderController::class,
     \App\Controller\VersioningController::class,
     \App\Controller\EmbedController::class,
+    \App\Controller\FileEditorController::class,
 ]));
 
 // --- Page d'accueil ---
