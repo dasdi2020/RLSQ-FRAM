@@ -40,6 +40,7 @@ $routes->addCollection($loader->loadAll([
     \App\Controller\DashboardController::class,
     \App\Controller\FormBuilderController::class,
     \App\Plugin\PaymentPlugin\Controller\PaymentController::class,
+    \App\Controller\PageBuilderController::class,
 ]));
 
 // --- Page d'accueil ---
