@@ -23,6 +23,17 @@
         { slug: 'cookie-consent', name: 'Cookies', icon: '🍪', desc: 'Bandeau RGPD de consentement aux cookies', installed: false },
         { slug: 'chat', name: 'Chat en ligne', icon: '💬', desc: 'Widget de chat en direct pour le support', installed: false },
         { slug: 'maps', name: 'Cartes', icon: '🗺️', desc: 'Google Maps / OpenStreetMap interactif', installed: false },
+        { slug: 'slider', name: 'Slider', icon: '🎞️', desc: 'Slider pleine largeur avec texte, CTA et transitions', installed: false },
+        { slug: 'accordion', name: 'Accordéon', icon: '📋', desc: 'Sections repliables FAQ / contenu', installed: false },
+        { slug: 'tabs', name: 'Onglets', icon: '📑', desc: 'Contenu organisé en onglets switchables', installed: false },
+        { slug: 'modal', name: 'Pop-up', icon: '🪟', desc: 'Pop-ups marketing avec timer et conditions', installed: false },
+        { slug: 'video-player', name: 'Lecteur vidéo', icon: '▶️', desc: 'Player vidéo custom avec playlist', installed: false },
+        { slug: 'search', name: 'Recherche', icon: '🔎', desc: 'Barre de recherche instantanée avec suggestions', installed: false },
+        { slug: 'breadcrumbs', name: 'Fil d\'Ariane', icon: '🔗', desc: 'Navigation hiérarchique automatique', installed: false },
+        { slug: 'back-to-top', name: 'Retour en haut', icon: '⬆️', desc: 'Bouton smooth-scroll vers le haut', installed: false },
+        { slug: 'lazy-load', name: 'Lazy Load', icon: '🐌', desc: 'Chargement différé des images pour la performance', installed: false },
+        { slug: 'dark-mode', name: 'Mode sombre', icon: '🌙', desc: 'Toggle dark/light mode pour le site public', installed: false },
+        { slug: 'multi-language', name: 'Multi-langue', icon: '🌍', desc: 'Sélecteur de langue + traductions automatiques', installed: false },
     ];
 
     async function loadPlugins() {
