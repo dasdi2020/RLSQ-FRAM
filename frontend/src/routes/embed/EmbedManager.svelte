@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte';
     import Input from '$lib/components/ui/Input.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import Dialog from '$lib/components/ui/Dialog.svelte';
     import AppLayout from '$lib/components/AppLayout.svelte';
 
     let { tenantSlug = 'federation-quebec' } = $props();
@@ -177,66 +178,58 @@
 {/if}
 
 <!-- Create Dialog -->
-{#if showCreateDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showCreateDialog = false}>
-        <Card class="w-full max-w-lg" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Nouvel embed</h3>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom</label>
-                    <Input placeholder="Widget Formations" bind:value={newEmbed.name} />
-                </div>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Module</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        {#each modules as m}
-                            <button class="p-3 rounded-[var(--radius)] border text-left cursor-pointer transition-colors flex items-center gap-2
-                                {newEmbed.module_slug === m.value ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
-                                onclick={() => newEmbed.module_slug = m.value}>
-                                <span class="text-xl">{m.icon}</span>
-                                <span class="text-sm font-medium">{m.label}</span>
-                            </button>
-                        {/each}
-                    </div>
-                </div>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Domaines autorisés (séparés par des virgules, * = tous)</label>
-                    <Input placeholder="monsite.com, *.exemple.com" bind:value={newEmbed.allowed_domains} />
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Couleur principale</label>
-                        <input type="color" bind:value={newEmbed.theme.primary_color} class="w-full h-10 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] cursor-pointer" />
-                    </div>
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Fond</label>
-                        <input type="color" bind:value={newEmbed.theme.background_color} class="w-full h-10 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] cursor-pointer" />
-                    </div>
-                </div>
-                <div class="flex gap-2 justify-end">
-                    <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
-                    <Button onclick={createEmbed}>Créer</Button>
-                </div>
+<Dialog bind:open={showCreateDialog} class="max-w-lg">
+    <div class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Nouvel embed</h3>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom</label>
+            <Input placeholder="Widget Formations" bind:value={newEmbed.name} />
+        </div>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Module</label>
+            <div class="grid grid-cols-2 gap-2">
+                {#each modules as m}
+                    <button class="p-3 rounded-[var(--radius)] border text-left cursor-pointer transition-colors flex items-center gap-2
+                        {newEmbed.module_slug === m.value ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
+                        onclick={() => newEmbed.module_slug = m.value}>
+                        <span class="text-xl">{m.icon}</span>
+                        <span class="text-sm font-medium">{m.label}</span>
+                    </button>
+                {/each}
             </div>
-        </Card>
+        </div>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Domaines autorisés (séparés par des virgules, * = tous)</label>
+            <Input placeholder="monsite.com, *.exemple.com" bind:value={newEmbed.allowed_domains} />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Couleur principale</label>
+                <input type="color" bind:value={newEmbed.theme.primary_color} class="w-full h-10 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] cursor-pointer" />
+            </div>
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Fond</label>
+                <input type="color" bind:value={newEmbed.theme.background_color} class="w-full h-10 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] cursor-pointer" />
+            </div>
+        </div>
+        <div class="flex gap-2 justify-end">
+            <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
+            <Button onclick={createEmbed}>Créer</Button>
+        </div>
     </div>
-{/if}
+</Dialog>
 
 <!-- Snippet Dialog -->
-{#if showSnippetDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showSnippetDialog = false}>
-        <Card class="w-full max-w-2xl" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold">Code d'intégration</h3>
-                    <Button size="sm" onclick={copySnippet}>Copier</Button>
-                </div>
-                <p class="text-sm text-[var(--color-muted)]">Collez ce code dans votre site web pour afficher le widget :</p>
-                <pre class="bg-[var(--color-secondary)] p-4 rounded-[var(--radius)] border border-[var(--color-border)] text-xs font-mono overflow-x-auto whitespace-pre-wrap text-[var(--color-accent)]">{snippetCode}</pre>
-                <Button variant="secondary" class="w-full" onclick={() => showSnippetDialog = false}>Fermer</Button>
-            </div>
-        </Card>
+<Dialog bind:open={showSnippetDialog} class="max-w-2xl">
+    <div class="p-6 space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Code d'intégration</h3>
+            <Button size="sm" onclick={copySnippet}>Copier</Button>
+        </div>
+        <p class="text-sm text-[var(--color-muted)]">Collez ce code dans votre site web pour afficher le widget :</p>
+        <pre class="bg-[var(--color-secondary)] p-4 rounded-[var(--radius)] border border-[var(--color-border)] text-xs font-mono overflow-x-auto whitespace-pre-wrap text-[var(--color-accent)]">{snippetCode}</pre>
+        <Button variant="secondary" class="w-full" onclick={() => showSnippetDialog = false}>Fermer</Button>
     </div>
-{/if}
+</Dialog>
 </div>
 </AppLayout>

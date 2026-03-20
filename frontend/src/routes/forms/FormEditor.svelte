@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte';
     import Input from '$lib/components/ui/Input.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import Dialog from '$lib/components/ui/Dialog.svelte';
     import AppLayout from '$lib/components/AppLayout.svelte';
 
     let { tenantSlug = 'federation-quebec' } = $props();
@@ -211,123 +212,113 @@
 </div>
 
 <!-- Create Form Dialog -->
-{#if showCreateDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showCreateDialog = false}>
-        <Card class="w-full max-w-md" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Nouveau formulaire</h3>
-                <Input placeholder="Nom du formulaire" bind:value={newFormName} />
-                <div class="flex gap-2 justify-end">
-                    <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
-                    <Button onclick={createForm}>Créer</Button>
-                </div>
-            </div>
-        </Card>
+<Dialog bind:open={showCreateDialog} class="max-w-md">
+    <div class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Nouveau formulaire</h3>
+        <Input placeholder="Nom du formulaire" bind:value={newFormName} />
+        <div class="flex gap-2 justify-end">
+            <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
+            <Button onclick={createForm}>Créer</Button>
+        </div>
     </div>
-{/if}
+</Dialog>
 
 <!-- Add Field Dialog -->
-{#if showFieldDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showFieldDialog = false}>
-        <Card class="w-full max-w-lg max-h-[80vh] overflow-y-auto" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Ajouter un champ</h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom technique</label>
-                        <Input placeholder="email" bind:value={newField.name} />
-                    </div>
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Label</label>
-                        <Input placeholder="Adresse email" bind:value={newField.label} />
-                    </div>
-                </div>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Type</label>
-                    <div class="grid grid-cols-4 gap-2">
-                        {#each fieldTypes as ft}
-                            <button class="p-2 rounded-[var(--radius)] border text-xs text-center cursor-pointer transition-colors
-                                {newField.type === ft.value ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]' : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
-                                onclick={() => newField.type = ft.value}>
-                                <div class="text-base">{ft.icon}</div>
-                                <div>{ft.label}</div>
-                            </button>
-                        {/each}
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Placeholder</label>
-                        <Input placeholder="Texte d'aide" bind:value={newField.placeholder} />
-                    </div>
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Largeur (1-12)</label>
-                        <Input type="number" min="1" max="12" bind:value={newField.width} />
-                    </div>
-                </div>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Texte d'aide</label>
-                    <Input placeholder="Aide contextuelle" bind:value={newField.help_text} />
-                </div>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" bind:checked={newField.is_required} /> Obligatoire
-                    </label>
-                </div>
-                <div class="flex gap-2 justify-end">
-                    <Button variant="secondary" onclick={() => showFieldDialog = false}>Annuler</Button>
-                    <Button onclick={addField}>Ajouter</Button>
-                </div>
+<Dialog bind:open={showFieldDialog} class="max-w-lg">
+    <div class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Ajouter un champ</h3>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom technique</label>
+                <Input placeholder="email" bind:value={newField.name} />
             </div>
-        </Card>
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Label</label>
+                <Input placeholder="Adresse email" bind:value={newField.label} />
+            </div>
+        </div>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Type</label>
+            <div class="grid grid-cols-4 gap-2">
+                {#each fieldTypes as ft}
+                    <button class="p-2 rounded-[var(--radius)] border text-xs text-center cursor-pointer transition-colors
+                        {newField.type === ft.value ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]' : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
+                        onclick={() => newField.type = ft.value}>
+                        <div class="text-base">{ft.icon}</div>
+                        <div>{ft.label}</div>
+                    </button>
+                {/each}
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Placeholder</label>
+                <Input placeholder="Texte d'aide" bind:value={newField.placeholder} />
+            </div>
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Largeur (1-12)</label>
+                <Input type="number" min="1" max="12" bind:value={newField.width} />
+            </div>
+        </div>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Texte d'aide</label>
+            <Input placeholder="Aide contextuelle" bind:value={newField.help_text} />
+        </div>
+        <div class="flex gap-4">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" bind:checked={newField.is_required} /> Obligatoire
+            </label>
+        </div>
+        <div class="flex gap-2 justify-end">
+            <Button variant="secondary" onclick={() => showFieldDialog = false}>Annuler</Button>
+            <Button onclick={addField}>Ajouter</Button>
+        </div>
     </div>
-{/if}
+</Dialog>
 
 <!-- Preview Dialog -->
-{#if showPreview && previewData}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showPreview = false}>
-        <Card class="w-full max-w-lg max-h-[80vh] overflow-y-auto" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold">Aperçu : {previewData.name}</h3>
-                    <button class="text-[var(--color-muted)] cursor-pointer" onclick={() => showPreview = false}>✕</button>
+<Dialog bind:open={showPreview} class="max-w-lg">
+    <div class="p-6 space-y-4">
+        {#if previewData}
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Aperçu : {previewData.name}</h3>
+            <button class="text-[var(--color-muted)] cursor-pointer" onclick={() => showPreview = false}>✕</button>
+        </div>
+        {#if previewData.description}
+            <p class="text-sm text-[var(--color-muted)]">{previewData.description}</p>
+        {/if}
+        <div class="grid grid-cols-12 gap-3">
+            {#each previewData.fields || [] as field}
+                <div class="col-span-{field.width}" style="grid-column: span {field.width};">
+                    <label class="text-sm font-medium mb-1 block">
+                        {field.label}
+                        {#if field.is_required}<span class="text-[var(--color-primary)]">*</span>{/if}
+                    </label>
+                    {#if field.type === 'textarea' || field.type === 'richtext'}
+                        <textarea class="flex w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm min-h-[80px]"
+                            placeholder={field.placeholder || ''}></textarea>
+                    {:else if field.type === 'select'}
+                        <select class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm">
+                            <option value="">{field.placeholder || 'Sélectionner...'}</option>
+                        </select>
+                    {:else if field.type === 'checkbox'}
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" /> <span class="text-sm">{field.placeholder || field.label}</span>
+                        </label>
+                    {:else}
+                        <input type={field.type === 'phone' ? 'tel' : field.type}
+                            class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm"
+                            placeholder={field.placeholder || ''} />
+                    {/if}
+                    {#if field.help_text}
+                        <p class="text-xs text-[var(--color-muted)] mt-1">{field.help_text}</p>
+                    {/if}
                 </div>
-                {#if previewData.description}
-                    <p class="text-sm text-[var(--color-muted)]">{previewData.description}</p>
-                {/if}
-                <div class="grid grid-cols-12 gap-3">
-                    {#each previewData.fields || [] as field}
-                        <div class="col-span-{field.width}" style="grid-column: span {field.width};">
-                            <label class="text-sm font-medium mb-1 block">
-                                {field.label}
-                                {#if field.is_required}<span class="text-[var(--color-primary)]">*</span>{/if}
-                            </label>
-                            {#if field.type === 'textarea' || field.type === 'richtext'}
-                                <textarea class="flex w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm min-h-[80px]"
-                                    placeholder={field.placeholder || ''}></textarea>
-                            {:else if field.type === 'select'}
-                                <select class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm">
-                                    <option value="">{field.placeholder || 'Sélectionner...'}</option>
-                                </select>
-                            {:else if field.type === 'checkbox'}
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" /> <span class="text-sm">{field.placeholder || field.label}</span>
-                                </label>
-                            {:else}
-                                <input type={field.type === 'phone' ? 'tel' : field.type}
-                                    class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm"
-                                    placeholder={field.placeholder || ''} />
-                            {/if}
-                            {#if field.help_text}
-                                <p class="text-xs text-[var(--color-muted)] mt-1">{field.help_text}</p>
-                            {/if}
-                        </div>
-                    {/each}
-                </div>
-                <Button class="w-full">Soumettre (aperçu)</Button>
-            </div>
-        </Card>
+            {/each}
+        </div>
+        <Button class="w-full">Soumettre (aperçu)</Button>
+        {/if}
     </div>
-{/if}
+</Dialog>
 </div>
 </AppLayout>

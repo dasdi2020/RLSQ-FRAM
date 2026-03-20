@@ -2,6 +2,7 @@
     import { get, post, put } from '$lib/api/client.js';
     import Button from '$lib/components/ui/Button.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import Dialog from '$lib/components/ui/Dialog.svelte';
     import AppLayout from '$lib/components/AppLayout.svelte';
 
     let { tenantSlug = 'federation-quebec' } = $props();
@@ -151,37 +152,35 @@
 </div>
 
 <!-- Settings Dialog -->
-{#if showSettings && selectedPlugin}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showSettings = false}>
-        <Card class="w-full max-w-md" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Configuration — {selectedPlugin.name}</h3>
+<Dialog bind:open={showSettings} class="max-w-md">
+    <div class="p-6 space-y-4">
+        {#if selectedPlugin}
+        <h3 class="text-lg font-semibold">Configuration — {selectedPlugin.name}</h3>
 
-                {#each selectedPlugin.settings_schema?.fields || [] as field}
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">{field.label}</label>
-                        {#if field.type === 'boolean'}
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" bind:checked={settingsData[field.name]} />
-                                <span class="text-sm">{settingsData[field.name] ? 'Activé' : 'Désactivé'}</span>
-                            </label>
-                        {:else if field.type === 'integer'}
-                            <input type="number" class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm"
-                                bind:value={settingsData[field.name]} />
-                        {:else}
-                            <input type="text" class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm"
-                                bind:value={settingsData[field.name]} />
-                        {/if}
-                    </div>
-                {/each}
-
-                <div class="flex gap-2 justify-end pt-2">
-                    <Button variant="secondary" onclick={() => showSettings = false}>Annuler</Button>
-                    <Button onclick={saveSettings}>Sauvegarder</Button>
-                </div>
+        {#each selectedPlugin.settings_schema?.fields || [] as field}
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">{field.label}</label>
+                {#if field.type === 'boolean'}
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" bind:checked={settingsData[field.name]} />
+                        <span class="text-sm">{settingsData[field.name] ? 'Activé' : 'Désactivé'}</span>
+                    </label>
+                {:else if field.type === 'integer'}
+                    <input type="number" class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm"
+                        bind:value={settingsData[field.name]} />
+                {:else}
+                    <input type="text" class="flex h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm"
+                        bind:value={settingsData[field.name]} />
+                {/if}
             </div>
-        </Card>
+        {/each}
+
+        <div class="flex gap-2 justify-end pt-2">
+            <Button variant="secondary" onclick={() => showSettings = false}>Annuler</Button>
+            <Button onclick={saveSettings}>Sauvegarder</Button>
+        </div>
+        {/if}
     </div>
-{/if}
+</Dialog>
 </div>
 </AppLayout>

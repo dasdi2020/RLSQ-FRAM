@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte';
     import Input from '$lib/components/ui/Input.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import Dialog from '$lib/components/ui/Dialog.svelte';
     import AppLayout from '$lib/components/AppLayout.svelte';
 
     let { tenantSlug = 'federation-quebec' } = $props();
@@ -204,76 +205,68 @@
 </div>
 
 <!-- Dialog: Créer une table -->
-{#if showCreateDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showCreateDialog = false}>
-        <Card class="w-full max-w-md" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Nouvelle table</h3>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom technique</label>
-                    <Input placeholder="articles" bind:value={newTableName} />
-                </div>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom d'affichage</label>
-                    <Input placeholder="Articles" bind:value={newTableDisplay} />
-                </div>
-                <div class="flex gap-2 justify-end">
-                    <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
-                    <Button onclick={createTable}>Créer</Button>
-                </div>
-            </div>
-        </Card>
+<Dialog bind:open={showCreateDialog}>
+    <div class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Nouvelle table</h3>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom technique</label>
+            <Input placeholder="articles" bind:value={newTableName} />
+        </div>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom d'affichage</label>
+            <Input placeholder="Articles" bind:value={newTableDisplay} />
+        </div>
+        <div class="flex gap-2 justify-end">
+            <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
+            <Button onclick={createTable}>Créer</Button>
+        </div>
     </div>
-{/if}
+</Dialog>
 
 <!-- Dialog: Ajouter une colonne -->
-{#if showColumnDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showColumnDialog = false}>
-        <Card class="w-full max-w-lg" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Nouvelle colonne</h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom technique</label>
-                        <Input placeholder="title" bind:value={newColumn.name} />
-                    </div>
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom d'affichage</label>
-                        <Input placeholder="Titre" bind:value={newColumn.display_name} />
-                    </div>
-                </div>
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Type</label>
-                    <div class="grid grid-cols-4 gap-2">
-                        {#each columnTypes as ct}
-                            <button
-                                class="p-2 rounded-[var(--radius)] border text-xs text-center cursor-pointer transition-colors
-                                    {newColumn.type === ct.value
-                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                                        : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
-                                onclick={() => newColumn.type = ct.value}
-                            >
-                                <div class="text-base">{ct.icon}</div>
-                                <div>{ct.label}</div>
-                            </button>
-                        {/each}
-                    </div>
-                </div>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" bind:checked={newColumn.is_nullable} /> Nullable
-                    </label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" bind:checked={newColumn.is_unique} /> Unique
-                    </label>
-                </div>
-                <div class="flex gap-2 justify-end">
-                    <Button variant="secondary" onclick={() => showColumnDialog = false}>Annuler</Button>
-                    <Button onclick={addColumn}>Ajouter</Button>
-                </div>
+<Dialog bind:open={showColumnDialog} class="max-w-lg">
+    <div class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Nouvelle colonne</h3>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom technique</label>
+                <Input placeholder="title" bind:value={newColumn.name} />
             </div>
-        </Card>
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom d'affichage</label>
+                <Input placeholder="Titre" bind:value={newColumn.display_name} />
+            </div>
+        </div>
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Type</label>
+            <div class="grid grid-cols-4 gap-2">
+                {#each columnTypes as ct}
+                    <button
+                        class="p-2 rounded-[var(--radius)] border text-xs text-center cursor-pointer transition-colors
+                            {newColumn.type === ct.value
+                                ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                                : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
+                        onclick={() => newColumn.type = ct.value}
+                    >
+                        <div class="text-base">{ct.icon}</div>
+                        <div>{ct.label}</div>
+                    </button>
+                {/each}
+            </div>
+        </div>
+        <div class="flex gap-4">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" bind:checked={newColumn.is_nullable} /> Nullable
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" bind:checked={newColumn.is_unique} /> Unique
+            </label>
+        </div>
+        <div class="flex gap-2 justify-end">
+            <Button variant="secondary" onclick={() => showColumnDialog = false}>Annuler</Button>
+            <Button onclick={addColumn}>Ajouter</Button>
+        </div>
     </div>
-{/if}
+</Dialog>
 </div>
 </AppLayout>

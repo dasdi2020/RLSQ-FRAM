@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte';
     import Input from '$lib/components/ui/Input.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import Dialog from '$lib/components/ui/Dialog.svelte';
     import AppLayout from '$lib/components/AppLayout.svelte';
 
     let activeTab = $state('theme');
@@ -178,52 +179,48 @@
         </div>
 
         <!-- Role creation dialog -->
-        {#if showRoleDialog}
-            <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 overflow-auto py-8" onclick={() => showRoleDialog = false}>
-                <Card class="w-full max-w-2xl max-h-[80vh] overflow-y-auto" onclick={(e) => e.stopPropagation()}>
-                    <div class="p-6 space-y-4">
-                        <h3 class="text-lg font-semibold">Nouveau rôle</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom</label>
-                                <Input placeholder="Éditeur" bind:value={newRole.name} />
-                            </div>
-                            <div>
-                                <label class="text-sm text-[var(--color-muted)] mb-1 block">Slug</label>
-                                <Input placeholder="editor" bind:value={newRole.slug} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-sm text-[var(--color-muted)] mb-2 block">Permissions ({newRole.permissions.length} sélectionnées)</label>
-                            <div class="space-y-3">
-                                {#each Object.entries(permGroups()) as [group, perms]}
-                                    <div>
-                                        <h5 class="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide mb-1">{group}</h5>
-                                        <div class="flex flex-wrap gap-1.5">
-                                            {#each perms as perm}
-                                                <button class="px-2 py-1 rounded text-xs cursor-pointer transition-colors
-                                                    {newRole.permissions.includes(perm)
-                                                        ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30'
-                                                        : 'bg-[var(--color-border)] text-[var(--color-muted)] border border-transparent hover:border-[var(--color-accent)]'}"
-                                                    onclick={() => togglePermission(perm)}>
-                                                    {perm.split('.')[1]}
-                                                </button>
-                                            {/each}
-                                        </div>
-                                    </div>
-                                {/each}
-                            </div>
-                        </div>
-
-                        <div class="flex gap-2 justify-end pt-2">
-                            <Button variant="secondary" onclick={() => showRoleDialog = false}>Annuler</Button>
-                            <Button>Créer le rôle</Button>
-                        </div>
+        <Dialog bind:open={showRoleDialog} class="max-w-2xl">
+            <div class="p-6 space-y-4">
+                <h3 class="text-lg font-semibold">Nouveau rôle</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Nom</label>
+                        <Input placeholder="Éditeur" bind:value={newRole.name} />
                     </div>
-                </Card>
+                    <div>
+                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Slug</label>
+                        <Input placeholder="editor" bind:value={newRole.slug} />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm text-[var(--color-muted)] mb-2 block">Permissions ({newRole.permissions.length} sélectionnées)</label>
+                    <div class="space-y-3">
+                        {#each Object.entries(permGroups()) as [group, perms]}
+                            <div>
+                                <h5 class="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide mb-1">{group}</h5>
+                                <div class="flex flex-wrap gap-1.5">
+                                    {#each perms as perm}
+                                        <button class="px-2 py-1 rounded text-xs cursor-pointer transition-colors
+                                            {newRole.permissions.includes(perm)
+                                                ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30'
+                                                : 'bg-[var(--color-border)] text-[var(--color-muted)] border border-transparent hover:border-[var(--color-accent)]'}"
+                                            onclick={() => togglePermission(perm)}>
+                                            {perm.split('.')[1]}
+                                        </button>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+
+                <div class="flex gap-2 justify-end pt-2">
+                    <Button variant="secondary" onclick={() => showRoleDialog = false}>Annuler</Button>
+                    <Button>Créer le rôle</Button>
+                </div>
             </div>
-        {/if}
+        </Dialog>
     {/if}
 
     <!-- i18n Tab -->

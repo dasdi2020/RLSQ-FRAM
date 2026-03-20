@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte';
     import Input from '$lib/components/ui/Input.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import Dialog from '$lib/components/ui/Dialog.svelte';
     import AppLayout from '$lib/components/AppLayout.svelte';
 
     let { tenantSlug = 'federation-quebec' } = $props();
@@ -203,97 +204,89 @@
 </div>
 
 <!-- Create Page Dialog -->
-{#if showCreateDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showCreateDialog = false}>
-        <Card class="w-full max-w-md" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Nouvelle page</h3>
-                <Input placeholder="Nom de la page" bind:value={newPageName} />
-                <div class="flex gap-2 justify-end">
-                    <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
-                    <Button onclick={createPage}>Créer</Button>
-                </div>
-            </div>
-        </Card>
+<Dialog bind:open={showCreateDialog} class="max-w-md">
+    <div class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Nouvelle page</h3>
+        <Input placeholder="Nom de la page" bind:value={newPageName} />
+        <div class="flex gap-2 justify-end">
+            <Button variant="secondary" onclick={() => showCreateDialog = false}>Annuler</Button>
+            <Button onclick={createPage}>Créer</Button>
+        </div>
     </div>
-{/if}
+</Dialog>
 
 <!-- Add Component Dialog -->
-{#if showComponentDialog}
-    <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick={() => showComponentDialog = false}>
-        <Card class="w-full max-w-2xl max-h-[85vh] overflow-y-auto" onclick={(e) => e.stopPropagation()}>
-            <div class="p-6 space-y-4">
-                <h3 class="text-lg font-semibold">Ajouter un composant</h3>
+<Dialog bind:open={showComponentDialog} class="max-w-2xl">
+    <div class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Ajouter un composant</h3>
 
-                <!-- Type picker -->
-                <div class="grid grid-cols-4 gap-2">
-                    {#each componentTypes as ct}
-                        <button class="p-3 rounded-[var(--radius)] border text-center cursor-pointer transition-colors
-                            {newComponent.type === ct.value ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
-                            onclick={() => newComponent.type = ct.value}>
-                            <div class="text-xl">{ct.icon}</div>
-                            <div class="text-xs font-medium mt-1">{ct.label}</div>
-                            <div class="text-xs text-[var(--color-muted)]">{ct.desc}</div>
-                        </button>
+        <!-- Type picker -->
+        <div class="grid grid-cols-4 gap-2">
+            {#each componentTypes as ct}
+                <button class="p-3 rounded-[var(--radius)] border text-center cursor-pointer transition-colors
+                    {newComponent.type === ct.value ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'}"
+                    onclick={() => newComponent.type = ct.value}>
+                    <div class="text-xl">{ct.icon}</div>
+                    <div class="text-xs font-medium mt-1">{ct.label}</div>
+                    <div class="text-xs text-[var(--color-muted)]">{ct.desc}</div>
+                </button>
+            {/each}
+        </div>
+
+        <!-- Content -->
+        {#if ['heading', 'text', 'button', 'card', 'html', 'richtext'].includes(newComponent.type)}
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Contenu</label>
+                {#if newComponent.type === 'html' || newComponent.type === 'richtext'}
+                    <textarea class="flex w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm font-mono min-h-[100px]"
+                        bind:value={newComponent.content}></textarea>
+                {:else}
+                    <Input bind:value={newComponent.content} placeholder="Contenu du composant" />
+                {/if}
+            </div>
+        {/if}
+
+        <!-- Props spécifiques -->
+        {#if newComponent.type === 'heading'}
+            <div>
+                <label class="text-sm text-[var(--color-muted)] mb-1 block">Niveau</label>
+                <div class="flex gap-2">
+                    {#each [1,2,3,4,5,6] as level}
+                        <button class="w-10 h-10 rounded border cursor-pointer text-sm font-bold
+                            {(newComponent.props.level||2) === level ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-[var(--color-border)]'}"
+                            onclick={() => newComponent.props = {...newComponent.props, level}}>H{level}</button>
                     {/each}
                 </div>
-
-                <!-- Content -->
-                {#if ['heading', 'text', 'button', 'card', 'html', 'richtext'].includes(newComponent.type)}
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Contenu</label>
-                        {#if newComponent.type === 'html' || newComponent.type === 'richtext'}
-                            <textarea class="flex w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-sm font-mono min-h-[100px]"
-                                bind:value={newComponent.content}></textarea>
-                        {:else}
-                            <Input bind:value={newComponent.content} placeholder="Contenu du composant" />
-                        {/if}
-                    </div>
-                {/if}
-
-                <!-- Props spécifiques -->
-                {#if newComponent.type === 'heading'}
-                    <div>
-                        <label class="text-sm text-[var(--color-muted)] mb-1 block">Niveau</label>
-                        <div class="flex gap-2">
-                            {#each [1,2,3,4,5,6] as level}
-                                <button class="w-10 h-10 rounded border cursor-pointer text-sm font-bold
-                                    {(newComponent.props.level||2) === level ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-[var(--color-border)]'}"
-                                    onclick={() => newComponent.props = {...newComponent.props, level}}>H{level}</button>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}
-
-                {#if newComponent.type === 'image'}
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><label class="text-sm text-[var(--color-muted)] mb-1 block">URL image</label><Input bind:value={newComponent.props.src} placeholder="https://..." /></div>
-                        <div><label class="text-sm text-[var(--color-muted)] mb-1 block">Texte alt</label><Input bind:value={newComponent.props.alt} placeholder="Description" /></div>
-                    </div>
-                {/if}
-
-                {#if newComponent.type === 'button'}
-                    <div><label class="text-sm text-[var(--color-muted)] mb-1 block">URL du lien</label><Input bind:value={newComponent.props.url} placeholder="/page" /></div>
-                {/if}
-
-                {#if newComponent.type === 'iframe'}
-                    <div><label class="text-sm text-[var(--color-muted)] mb-1 block">URL</label><Input bind:value={newComponent.props.src} placeholder="https://..." /></div>
-                {/if}
-
-                <!-- Width -->
-                <div>
-                    <label class="text-sm text-[var(--color-muted)] mb-1 block">Largeur ({newComponent.width}/12)</label>
-                    <input type="range" min="1" max="12" bind:value={newComponent.width} class="w-full" />
-                </div>
-
-                <div class="flex gap-2 justify-end">
-                    <Button variant="secondary" onclick={() => showComponentDialog = false}>Annuler</Button>
-                    <Button onclick={addComponent}>Ajouter</Button>
-                </div>
             </div>
-        </Card>
+        {/if}
+
+        {#if newComponent.type === 'image'}
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="text-sm text-[var(--color-muted)] mb-1 block">URL image</label><Input bind:value={newComponent.props.src} placeholder="https://..." /></div>
+                <div><label class="text-sm text-[var(--color-muted)] mb-1 block">Texte alt</label><Input bind:value={newComponent.props.alt} placeholder="Description" /></div>
+            </div>
+        {/if}
+
+        {#if newComponent.type === 'button'}
+            <div><label class="text-sm text-[var(--color-muted)] mb-1 block">URL du lien</label><Input bind:value={newComponent.props.url} placeholder="/page" /></div>
+        {/if}
+
+        {#if newComponent.type === 'iframe'}
+            <div><label class="text-sm text-[var(--color-muted)] mb-1 block">URL</label><Input bind:value={newComponent.props.src} placeholder="https://..." /></div>
+        {/if}
+
+        <!-- Width -->
+        <div>
+            <label class="text-sm text-[var(--color-muted)] mb-1 block">Largeur ({newComponent.width}/12)</label>
+            <input type="range" min="1" max="12" bind:value={newComponent.width} class="w-full" />
+        </div>
+
+        <div class="flex gap-2 justify-end">
+            <Button variant="secondary" onclick={() => showComponentDialog = false}>Annuler</Button>
+            <Button onclick={addComponent}>Ajouter</Button>
+        </div>
     </div>
-{/if}
+</Dialog>
 
 <!-- Preview -->
 {#if showPreview && selectedPage}
