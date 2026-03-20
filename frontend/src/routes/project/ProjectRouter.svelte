@@ -8,6 +8,7 @@
     import CmsPages from './CmsPages.svelte';
     import CmsMenus from './CmsMenus.svelte';
     import CmsPlugins from './CmsPlugins.svelte';
+    import PageBuilderV2 from './PageBuilderV2.svelte';
     import CmsSettings from './CmsSettings.svelte';
     import Card from '$lib/components/ui/Card.svelte';
 
@@ -35,6 +36,8 @@
 <CmsLayout projectSlug={slug}>
     {#if subPath === '' || subPath === '/'}
         <CmsDashboard projectSlug={slug} />
+    {:else if subPath.match(/^\/pages\/\d+/)}
+        <PageBuilderV2 projectSlug={slug} pageId={subPath.replace('/pages/', '')} />
     {:else if subPath.startsWith('/pages')}
         <CmsPages projectSlug={slug} />
     {:else if subPath.startsWith('/menus')}
