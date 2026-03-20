@@ -14,6 +14,7 @@
     import ErdEditor from './routes/erd/ErdEditor.svelte';
     import Profile from './routes/profile/Profile.svelte';
     import Users from './routes/users/Users.svelte';
+    import ProjectRouter from './routes/project/ProjectRouter.svelte';
 
     const routes = {
         '/': Login,
@@ -30,6 +31,10 @@
         '/settings': Settings,
         '/notifications': Notifications,
         '/profile': Profile,
+        // Project CMS routes
+        '/p/:slug': ProjectRouter,
+        '/p/:slug/*': ProjectRouter,
+        // Tenant routes (legacy)
         '/t/:slug': TenantDashboard,
         '/t/:slug/*': TenantDashboard,
     };
