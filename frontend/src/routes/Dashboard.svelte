@@ -47,6 +47,28 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
                 Modules
             </a>
+            <a href="#/forms" class="flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)] text-sm">
+                <span class="w-4 text-center">📝</span> Formulaires
+            </a>
+            <a href="#/pages" class="flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)] text-sm">
+                <span class="w-4 text-center">📄</span> Pages
+            </a>
+            <a href="#/embeds" class="flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)] text-sm">
+                <span class="w-4 text-center">🔗</span> Embeds
+            </a>
+
+            <div class="pt-3 mt-3 border-t border-[var(--color-border)]">
+                <p class="px-3 text-xs text-[var(--color-muted-foreground)] uppercase tracking-wide mb-2">Système</p>
+                <a href="#/audit" class="flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)] text-sm">
+                    <span class="w-4 text-center">📋</span> Audit
+                </a>
+                <a href="#/notifications" class="flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)] text-sm">
+                    <span class="w-4 text-center">🔔</span> Notifications
+                </a>
+                <a href="#/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)] text-sm">
+                    <span class="w-4 text-center">⚙️</span> Paramètres
+                </a>
+            </div>
         </nav>
 
         <div class="p-3 border-t border-[var(--color-border)]">

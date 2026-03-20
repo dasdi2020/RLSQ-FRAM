@@ -7,6 +7,10 @@
     import TenantDashboard from './routes/dashboard/TenantDashboard.svelte';
     import FormEditor from './routes/forms/FormEditor.svelte';
     import PageEditor from './routes/pages/PageEditor.svelte';
+    import EmbedManager from './routes/embed/EmbedManager.svelte';
+    import AuditLog from './routes/audit/AuditLog.svelte';
+    import Settings from './routes/settings/Settings.svelte';
+    import Notifications from './routes/notifications/Notifications.svelte';
 
     const routes = {
         '/': Login,
@@ -16,6 +20,10 @@
         '/plugins': PluginStore,
         '/forms': FormEditor,
         '/pages': PageEditor,
+        '/embeds': EmbedManager,
+        '/audit': AuditLog,
+        '/settings': Settings,
+        '/notifications': Notifications,
         '/t/:slug': TenantDashboard,
         '/t/:slug/*': TenantDashboard,
     };
