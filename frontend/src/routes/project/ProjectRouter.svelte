@@ -12,6 +12,8 @@
     import CmsSettings from './CmsSettings.svelte';
     import CmsCodeEditor from './CmsCodeEditor.svelte';
     import CmsLoginDesigner from './CmsLoginDesigner.svelte';
+    import CmsPreview from './CmsPreview.svelte';
+    import CmsDeploy from './CmsDeploy.svelte';
     import Card from '$lib/components/ui/Card.svelte';
 
     let { params = {} } = $props();
@@ -52,6 +54,10 @@
         <CmsCodeEditor projectSlug={slug} />
     {:else if subPath.startsWith('/login-design')}
         <CmsLoginDesigner projectSlug={slug} />
+    {:else if subPath.startsWith('/preview')}
+        <CmsPreview projectSlug={slug} />
+    {:else if subPath.startsWith('/deploy')}
+        <CmsDeploy projectSlug={slug} />
     {:else if subPath.startsWith('/database') || subPath.startsWith('/erd') || subPath.startsWith('/forms') || subPath.startsWith('/media') || subPath.startsWith('/login-design') || subPath.startsWith('/preview') || subPath.startsWith('/deploy')}
         <!-- Placeholder pour les pages en développement -->
         <header class="h-14 border-b border-[var(--color-border)] flex items-center px-6">
