@@ -155,12 +155,104 @@ class AuthController extends AbstractController
     {
         $payload = $request->attributes->get('_jwt_payload', []);
 
+        $userId = $payload['user_id'] ?? null;
+        $conn = $this->get(Connection::class);
+        $user = $userId ? $conn->fetchOne('SELECT * FROM users WHERE id = :id', ['id' => $userId]) : null;
+
         return $this->json([
-            'user_id' => $payload['user_id'] ?? null,
+            'user_id' => $userId,
             'email' => $payload['email'] ?? null,
             'first_name' => $payload['first_name'] ?? null,
             'last_name' => $payload['last_name'] ?? null,
             'roles' => $payload['roles'] ?? [],
+            'mfa_method' => $user['mfa_method'] ?? 'email',
+            'totp_enabled' => !empty($user['totp_secret']),
         ]);
+    }
+
+    #[Route('/mfa/setup-totp', name: 'auth_setup_totp', methods: ['POST'])]
+    #[RequireAuth]
+    #[ApiRoute(summary: 'Configurer TOTP (Google/Microsoft Authenticator)', tags: ['Auth'])]
+    public function setupTotp(Request $request, Connection $connection): JsonResponse
+    {
+        $userId = $request->attributes->get('_user_id');
+        $user = $connection->fetchOne('SELECT * FROM users WHERE id = :id', ['id' => $userId]);
+
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur introuvable.'], 404);
+        }
+
+        $totp = new \RLSQ\Security\TwoFactor\TotpManager();
+        $secret = $totp->generateSecret();
+        $uri = $totp->getProvisioningUri($secret, $user['email']);
+        $qrUrl = $totp->getQrCodeUrl($uri);
+
+        // Sauvegarder le secret temporairement (sera confirmé après vérification)
+        $connection->execute(
+            'UPDATE users SET totp_secret_pending = :s WHERE id = :id',
+            ['s' => $secret, 'id' => $userId],
+        );
+
+        return $this->json([
+            'secret' => $secret,
+            'provisioning_uri' => $uri,
+            'qr_code_url' => $qrUrl,
+        ]);
+    }
+
+    #[Route('/mfa/confirm-totp', name: 'auth_confirm_totp', methods: ['POST'])]
+    #[RequireAuth]
+    #[ApiRoute(summary: 'Confirmer le TOTP avec un code', tags: ['Auth'])]
+    public function confirmTotp(Request $request, Connection $connection): JsonResponse
+    {
+        $userId = $request->attributes->get('_user_id');
+        $data = json_decode($request->getContent(), true) ?? [];
+        $code = $data['code'] ?? '';
+
+        $user = $connection->fetchOne('SELECT * FROM users WHERE id = :id', ['id' => $userId]);
+        $pendingSecret = $user['totp_secret_pending'] ?? '';
+
+        if (!$pendingSecret) {
+            return $this->json(['error' => 'Aucune configuration TOTP en attente.'], 400);
+        }
+
+        $totp = new \RLSQ\Security\TwoFactor\TotpManager();
+
+        if (!$totp->verify($pendingSecret, $code)) {
+            return $this->json(['error' => 'Code invalide. Réessayez.'], 400);
+        }
+
+        // Activer le TOTP
+        $connection->execute(
+            'UPDATE users SET totp_secret = :s, totp_secret_pending = NULL, mfa_method = :m WHERE id = :id',
+            ['s' => $pendingSecret, 'm' => 'totp', 'id' => $userId],
+        );
+
+        return $this->json(['message' => 'TOTP activé avec succès.', 'mfa_method' => 'totp']);
+    }
+
+    #[Route('/mfa/switch', name: 'auth_mfa_switch', methods: ['POST'])]
+    #[RequireAuth]
+    #[ApiRoute(summary: 'Changer la méthode MFA (email ou totp)', tags: ['Auth'])]
+    public function switchMfa(Request $request, Connection $connection): JsonResponse
+    {
+        $userId = $request->attributes->get('_user_id');
+        $data = json_decode($request->getContent(), true) ?? [];
+        $method = $data['method'] ?? 'email';
+
+        if (!in_array($method, ['email', 'totp'], true)) {
+            return $this->json(['error' => 'Méthode invalide. Utilisez "email" ou "totp".'], 400);
+        }
+
+        if ($method === 'totp') {
+            $user = $connection->fetchOne('SELECT totp_secret FROM users WHERE id = :id', ['id' => $userId]);
+            if (empty($user['totp_secret'])) {
+                return $this->json(['error' => 'Configurez d\'abord le TOTP via /mfa/setup-totp.'], 400);
+            }
+        }
+
+        $connection->execute('UPDATE users SET mfa_method = :m WHERE id = :id', ['m' => $method, 'id' => $userId]);
+
+        return $this->json(['message' => 'Méthode MFA changée.', 'mfa_method' => $method]);
     }
 }
