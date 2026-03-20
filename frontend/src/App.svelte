@@ -11,19 +11,25 @@
     import AuditLog from './routes/audit/AuditLog.svelte';
     import Settings from './routes/settings/Settings.svelte';
     import Notifications from './routes/notifications/Notifications.svelte';
+    import ErdEditor from './routes/erd/ErdEditor.svelte';
+    import Profile from './routes/profile/Profile.svelte';
+    import Users from './routes/users/Users.svelte';
 
     const routes = {
         '/': Login,
         '/login': Login,
         '/dashboard': Dashboard,
         '/database': SchemaEditor,
+        '/erd': ErdEditor,
         '/plugins': PluginStore,
         '/forms': FormEditor,
         '/pages': PageEditor,
         '/embeds': EmbedManager,
+        '/users': Users,
         '/audit': AuditLog,
         '/settings': Settings,
         '/notifications': Notifications,
+        '/profile': Profile,
         '/t/:slug': TenantDashboard,
         '/t/:slug/*': TenantDashboard,
     };
