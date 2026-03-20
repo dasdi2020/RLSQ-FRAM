@@ -43,6 +43,7 @@ $routes->addCollection($loader->loadAll([
     \App\Plugin\PaymentPlugin\Controller\PaymentController::class,
     \App\Controller\PageBuilderController::class,
     \App\Controller\VersioningController::class,
+    \App\Controller\EmbedController::class,
 ]));
 
 // --- Page d'accueil ---
