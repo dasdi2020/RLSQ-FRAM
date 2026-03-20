@@ -38,6 +38,7 @@ $routes->addCollection($loader->loadAll([
     \App\Controller\PluginController::class,
     \App\Controller\TenantAuthController::class,
     \App\Controller\DashboardController::class,
+    \App\Controller\FormBuilderController::class,
 ]));
 
 // --- Page d'accueil ---
