@@ -35,6 +35,7 @@ $migrationManager->addMigrations([
     new \App\Migration\M002_SeedSuperAdmin(),
     new \App\Migration\M003_CreateTenantsTable(),
     new \App\Migration\M004_CreateVersionsTables(),
+    new \App\Migration\M005_CreateProjectsTable(),
 ]);
 
 // migration:run

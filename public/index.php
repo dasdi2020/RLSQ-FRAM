@@ -26,6 +26,7 @@ $migrationManager->addMigrations([
     new \App\Migration\M002_SeedSuperAdmin(),
     new \App\Migration\M003_CreateTenantsTable(),
     new \App\Migration\M004_CreateVersionsTables(),
+    new \App\Migration\M005_CreateProjectsTable(),
 ]);
 $migrationManager->migrate();
 
@@ -34,6 +35,7 @@ $loader = new AttributeRouteLoader();
 $routes->addCollection($loader->loadAll([
     \App\Controller\AuthController::class,
     \App\Controller\AdminTenantController::class,
+    \App\Controller\ProjectController::class,
     \App\Controller\SchemaController::class,
     \App\Controller\DynamicDataController::class,
     \App\Controller\PluginController::class,

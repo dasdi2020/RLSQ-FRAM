@@ -270,6 +270,14 @@ class Kernel
         ));
         $c->setAlias(\App\Tenant\TenantService::class, 'tenant.service');
 
+        // Project service
+        $c->set('project.service', new \App\Project\ProjectService(
+            $c->get('database.connection'),
+            $provisioner,
+            $projectDir,
+        ));
+        $c->setAlias(\App\Project\ProjectService::class, 'project.service');
+
         // 2FA
         $c->set(\RLSQ\Security\TwoFactor\TwoFactorManager::class,
             new \RLSQ\Security\TwoFactor\TwoFactorManager($c->get('database.connection')));
