@@ -137,7 +137,7 @@ class FormBuilderController extends AbstractController
 
     #[Route('/{slug}/render', name: 'forms_render', methods: ['GET'])]
     #[ApiRoute(summary: 'Structure JSON pour afficher le formulaire', tags: ['Forms'])]
-    public function render(string $tenantSlug, string $slug): JsonResponse
+    public function renderForm(string $tenantSlug, string $slug): JsonResponse
     {
         $service = $this->getService($tenantSlug);
         $form = $service->getFormBySlug($slug);

@@ -121,7 +121,7 @@ class EmbedController extends AbstractController
 
     #[Route('/embed/{token}', name: 'embed_render', methods: ['GET'])]
     #[ApiRoute(summary: 'Contenu de l\'iframe embed (public)', tags: ['Embed'])]
-    public function render(string $token, Request $request): Response
+    public function renderEmbed(string $token, Request $request): Response
     {
         // Trouver à quel tenant appartient ce token
         $embedData = $this->findEmbedByToken($token);
