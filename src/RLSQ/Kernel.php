@@ -196,9 +196,17 @@ class Kernel
             ]);
         $c->setAlias(HttpKernelInterface::class, 'http_kernel');
 
-        // Mailer
-        $c->register('mailer.transport', \RLSQ\Mailer\Transport\LogTransport::class)
-            ->setArguments(['%kernel.project_dir%/var/mail_log']);
+        // Mailer — auto-detect Mailpit (SMTP localhost:1025), sinon fallback LogTransport
+        $mailerHost = $_ENV['MAILER_HOST'] ?? 'localhost';
+        $mailerPort = (int) ($_ENV['MAILER_PORT'] ?? 1025);
+        $smtpCheck = @fsockopen($mailerHost, $mailerPort, $errno, $errstr, 1);
+
+        if ($smtpCheck) {
+            fclose($smtpCheck);
+            $c->set('mailer.transport', new \RLSQ\Mailer\Transport\MailpitTransport($mailerHost, $mailerPort));
+        } else {
+            $c->set('mailer.transport', new \RLSQ\Mailer\Transport\LogTransport($this->projectDir . '/var/mail_log'));
+        }
 
         $c->register('mailer.queue', \RLSQ\Mailer\Queue\FilesystemQueue::class)
             ->setArguments(['%kernel.project_dir%/var/mail_queue']);

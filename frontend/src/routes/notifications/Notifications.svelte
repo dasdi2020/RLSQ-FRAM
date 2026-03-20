@@ -2,6 +2,7 @@
     import { get, post } from '$lib/api/client.js';
     import Button from '$lib/components/ui/Button.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import AppLayout from '$lib/components/AppLayout.svelte';
 
     let notifications = $state([
         { id: 1, type: 'info', title: 'Bienvenue', body: 'Bienvenue sur la plateforme RLSQ-FRAM', is_read: 0, created_at: '2026-03-19 20:00:00', data: {} },
@@ -44,10 +45,12 @@
     }
 </script>
 
+<AppLayout>
+<header class="h-14 border-b border-[var(--color-border)] flex items-center px-6"><h2 class="text-lg font-semibold">Notifications</h2></header>
+<div class="p-6 flex-1 overflow-auto">
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-xl font-bold">Notifications</h2>
             <p class="text-sm text-[var(--color-muted)]">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
         </div>
         <div class="flex gap-2">
@@ -92,3 +95,5 @@
         {/each}
     </div>
 </div>
+</div>
+</AppLayout>

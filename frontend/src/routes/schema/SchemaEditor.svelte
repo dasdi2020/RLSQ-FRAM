@@ -3,6 +3,7 @@
     import Button from '$lib/components/ui/Button.svelte';
     import Input from '$lib/components/ui/Input.svelte';
     import Card from '$lib/components/ui/Card.svelte';
+    import AppLayout from '$lib/components/AppLayout.svelte';
 
     let { tenantSlug = 'federation-quebec' } = $props();
 
@@ -90,6 +91,9 @@
     $effect(() => { loadTables(); });
 </script>
 
+<AppLayout>
+<header class="h-14 border-b border-[var(--color-border)] flex items-center px-6"><h2 class="text-lg font-semibold">Base de données</h2></header>
+<div class="p-6 flex-1 overflow-auto">
 <div class="flex h-full gap-4">
     <!-- Sidebar: liste des tables -->
     <div class="w-72 flex-shrink-0 flex flex-col gap-3">
@@ -271,3 +275,5 @@
         </Card>
     </div>
 {/if}
+</div>
+</AppLayout>
