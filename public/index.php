@@ -39,6 +39,7 @@ $routes->addCollection($loader->loadAll([
     \App\Controller\TenantAuthController::class,
     \App\Controller\DashboardController::class,
     \App\Controller\FormBuilderController::class,
+    \App\Plugin\PaymentPlugin\Controller\PaymentController::class,
 ]));
 
 // --- Page d'accueil ---

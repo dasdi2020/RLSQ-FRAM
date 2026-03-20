@@ -272,6 +272,7 @@ class Kernel
         $registry->register(new \App\Plugin\ActivityPlugin\ActivityPlugin());
         $registry->register(new \App\Plugin\CalendarPlugin\CalendarPlugin());
         $registry->register(new \App\Plugin\RoomBookingPlugin\RoomBookingPlugin());
+        $registry->register(new \App\Plugin\PaymentPlugin\PaymentPlugin());
         $c->set('plugin.registry', $registry);
         $c->setAlias(\RLSQ\Plugin\PluginRegistry::class, 'plugin.registry');
 
